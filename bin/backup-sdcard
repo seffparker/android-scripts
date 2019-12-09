@@ -1,0 +1,60 @@
+#!/system/xbin/bash
+
+## Sync Internal storage to SD card
+## Author: Seff P
+## Version: 20191207
+
+source check-root
+
+source setdir
+source setcolor
+
+RSYNC='/data/data/com.termux/files/usr/bin/rsync'
+OPTIONS="-truv --blocking-io -@ 5 --force --delete --stats --exclude-from=$ETC/backup-sdcard.excludes --delete-excluded"
+SRC='/data/media/0/'
+DEST='/mnt/media_rw/4A75-1B1E/phone_backup/'
+
+CheckBackupDrive(){
+    if [ ! -d $DEST ]
+        then echo -e "${R}ERROR: Backup Drive Not Found${W}"
+        exit 2
+    fi
+}
+
+case $1 in
+ -r|r*)
+    CURR_TS=$(date +%s)
+    BACKUP_SDCARD_TS=$(date +%s -r $VAR/backup-sdcard.last_run)
+    let BACKUP_SDCARD_AGE=$CURR_TS-$BACKUP_SDCARD_TS
+    let BACKUP_SDCARD_THR=$(cat $ETC/backup-sdcard.remind_days)*86400
+    let BACKUP_SDCARD_AGE_DAYS=$BACKUP_SDCARD_AGE/86400
+    if [ $BACKUP_SDCARD_AGE -gt $BACKUP_SDCARD_THR ]
+    then
+        termux-run termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGE_DAYS days old"
+    fi
+    echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago"
+    ;;
+
+ -s|s*)
+    CheckBackupDrive
+    echo -e "${Y}Scanning files to be deleted...${W}\n"
+    $RSYNC $OPTIONS -n $SRC $DEST | awk '/^deleting / { $1=""; print $0; system ("") }' | grep --line-buffered -vE 'WhatsApp|.estrongs'
+    DONE
+    echo -n "Last rsync date: "
+    cat $VAR/backup-sdcard.last_run
+    ;;
+
+ -b|b*)
+    CheckBackupDrive
+    termux-wake-lock
+    $RSYNC $OPTIONS $SRC $DEST
+    date > $DEST/../backup-sdcard.last_run
+    date > $VAR/backup-sdcard.last_run
+    termux-wake-unlock
+    ;;
+
+ *)
+    echo "Usage: `basename $0` [-r|report | -s|scan | -b|backup]"
+    exit 3
+    ;;
+esac

@@ -1,0 +1,24 @@
+#!/system/xbin/bash
+
+# To get KEY confirmation again, revoke
+# existing keys, disable developer mode
+# enable developer mode, enable USB
+# debugging, then run adbd-local
+# remount / as RW
+
+check-root || exit 1
+
+if [ "$BASH_ARGC" ]
+then 
+    remount-rw
+    setprop service.adb.tcp.port 5555
+    stop adbd
+    pkill adb
+    start adbd
+    adb connect localhost
+    sleep 3
+    adb devices
+    remount-ro
+else
+    echo "Usage: . adbd-local"
+fi

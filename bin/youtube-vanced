@@ -1,0 +1,96 @@
+#!/system/xbin/bash
+
+## Manage Vanced version of YouTube
+## Author: Seff P
+## Version: 20191129
+
+source check-root
+
+source logdate
+source setcolor
+source setdir
+
+PLAY_DB_DIR="/data/data/com.android.vending/databases"
+PKG_ID="com.google.android.youtube"
+PKG_DN="YouTube"
+PKG_DATA_DIR="/data/data/com.google.android.youtube"
+PKG_DATA_BACKUP="$VAR/youtube-vanced.settings.tar"
+
+DetachYoutube() {
+echo -n "$(logdate) Detaching $PKG_DN "
+CHECK=$(sqlite3 /data/data/com.android.vending/databases/library.db "SELECT doc_id FROM ownership WHERE doc_id = '$PKG_ID'";)
+
+if [ -z "$CHECK" ]
+    then
+    SKIP
+else
+    sqlite3 $PLAY_DB_DIR/library.db "DELETE from ownership where doc_id = '$PKG_ID'";
+    sqlite3 $PLAY_DB_DIR/localappstate.db "DELETE from appstate where package_name ='$PKG_ID'";
+    setenforce 0
+    /system/bin/am force-stop com.android.vending
+    setenforce 1
+    termux-run termux-notification --content "Detached $PKG_DN from PlayStore" --id youtube-vanced
+    echo "$(DONE)"
+fi
+}
+
+RestoreYoutubeApp() {
+if ls -d /data/app/$PKG_ID-* &> /dev/null
+    then
+    echo -n "$(logdate) Uninstalling $PKG_DN updates "
+    setenforce 0
+    pm uninstall -k $PKG_ID
+    setenforce 1
+    tar -xf $PKG_DATA_BACKUP -C /
+    termux-run termux-notification --content "Uninstalled $PKG_DN updates"
+    DONE
+    RestoreYoutubeData
+fi
+}
+
+RestoreYoutubeData() {
+    echo -n "$(logdate) Restoring $PKG_DN settings  "
+    tar -xf $PKG_DATA_BACKUP -C /
+    DONE
+}
+
+BackupYoutubeData() {
+    echo -n "$(logdate) Backing up YouTube data  "
+    tar -cf $PKG_DATA_BACKUP $PKG_DATA_DIR/databases $PKG_DATA_DIR/shared_prefs
+    DONE
+}
+
+UpdateYoutube() {
+    remount-rw || exit 1
+    echo -n "$(logdate) Updating YouTube... "
+    rm -rf /system/app/YouTube
+    cp -rf $MODS/YouTube /system/app/
+    DONE
+    echo -n "$(logdate) Setting permissions... "
+    find /system/app/YouTube -type f -exec chmod 644 {} \;
+    find /system/app/YouTube -type d -exec chmod 755 {} \;
+    remount-ro
+    DONE
+}
+
+case $1 in
+ -d|d*)
+    DetachYoutube
+    RestoreYoutubeApp
+    ;;
+ -u|u*)
+    DetachYoutube
+    UpdateYoutube
+    RestoreYoutubeApp
+    RestoreYoutubeData
+    ;;
+ -b|b*)
+    BackupYoutubeData
+    ;;
+ -r|r*)
+    RestoreYoutubeData
+    ;;
+ *)
+    echo "Usage: $(basename $0) [-d|detach | -u|update | -b|backup | -r|restore]"
+    ;;
+esac

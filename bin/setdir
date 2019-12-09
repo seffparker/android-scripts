@@ -1,0 +1,8 @@
+# Set Android lab dirs
+
+export MODS="/sdcard/lab/android/mods"
+export ETC="/sdcard/lab/android/etc"
+export RUN="/sdcard/lab/android/run"
+export LOG="/sdcard/lab/android/log"
+export VAR="/sdcard/lab/android/var"
+export BIN="/sdcard/lab/android/bin"

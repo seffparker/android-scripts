@@ -1,0 +1,8 @@
+export LD_LIBRARY_PATH="/data/data/com.termux/files/usr/lib:/system/lib64"
+export PATH="/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:/sbin/su:/su/bin:/su/xbin:/system/bin:/system/xbin"
+export PREFIX="/data/data/com.termux/files/usr"
+export LD_PRELOAD="/data/data/com.termux/files/usr/lib/libtermux-exec.so"
+export TMPDIR="/data/data/com.termux/files/usr/tmp"
+export EXTERNAL_STORAGE=/sdcard
+export ANDROID_ROOT=/system
+export ANDROID_DATA=/data

@@ -1,0 +1,7 @@
+#!/system/xbin/bash
+
+source check-root
+
+/system/bin/mount -o remount,ro /vendor
+/system/bin/mount -o remount,ro /system
+/system/bin/mount -o remount,ro /

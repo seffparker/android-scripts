@@ -1,0 +1,63 @@
+#!/system/xbin/bash
+
+## Optimize Android app databases
+## Author: Seff P
+## Version: 20191204
+
+source check-root
+source logdate
+source setdir
+source setcolor
+
+ case $1 in
+ -r|r*)
+    CURR_TS=$(date +%s)
+    OPTIMIZE_DB_TS=$(date +%s -r $VAR/optimize-db.last_run)
+    let OPTIMIZE_DB_AGE=$CURR_TS-$OPTIMIZE_DB_TS
+    let OPTIMIZE_DB_THR=$(cat $ETC/optimize-db.remind_days)*86400
+    let OPTIMIZE_DB_AGE_DAYS=$OPTIMIZE_DB_AGE/86400
+    if [ $OPTIMIZE_DB_AGE -gt $OPTIMIZE_DB_THR ]
+    then
+        termux-run termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" 
+    fi
+    echo "Database last optimized $OPTIMIZE_DB_AGE_DAYS days ago"
+    ;;
+
+ -o|o*)
+    PRESIZE=0
+    POSTSIZE=0
+    termux-wake-lock
+    svc data disable
+    svc wifi disable
+    LD_PRELOAD=""
+    for DB in \
+    $(busybox find /data/data/*/databases \
+        -type f  ! -name "*-shm" \
+        ! -name "*-wal" ! -name "*-journal");
+    do \
+        CURSIZE=$(du $DB | awk {'print $1'})
+        PRESIZE=$(( $PRESIZE + $CURSIZE ))
+        echo -n "$(logdate) "
+        echo "$DB" | awk -F '/' '{printf $4" - "$6}'
+        if sqlite3 $DB 'REINDEX;' &> /dev/null
+            then
+            sqlite3 $DB 'VACUUM;' &> /dev/null
+            DONE
+        else
+            FAIL
+        fi
+        CURSIZE=$(du $DB | awk {'print $1'})
+        POSTSIZE=$(( $POSTSIZE + $CURSIZE ))
+    done;
+
+    date > $VAR/optimize-db.last_run
+    echo
+    echo "Total DB size before: $PRESIZE KB"
+    echo "Total DB size after : $POSTSIZE KB"
+    termux-wake-unlock
+    ;;
+    
+    *)
+    echo "Usage: $(basename $0) [-r|report | -o|optimize]"
+    ;;
+esac

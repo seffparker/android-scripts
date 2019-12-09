@@ -1,0 +1,21 @@
+#!/system/xbin/bash
+
+## Optimize system RAM
+## Author: Seff P
+## Version: 20191129
+
+source check-root
+source logdate
+source setcolor
+
+echo -ne "$(logdate) Saving buffers "
+    sync
+    DONE
+
+echo -ne "$(logdate) Dropping caches "
+    echo 3 > /proc/sys/vm/drop_caches
+    DONE
+
+echo -ne "$(logdate) Compacting memory "
+    echo 1 > /proc/sys/vm/compact_memory
+    DONE

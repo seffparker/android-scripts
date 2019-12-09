@@ -1,0 +1,6 @@
+logdate() {
+ echo -n "$(date '+[%F %X %Z] -')"
+}
+printdate(){
+    date '+%F %X %Z'
+}

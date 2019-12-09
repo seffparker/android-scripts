@@ -1,0 +1,14 @@
+#!/system/xbin/bash
+
+## Update mlocate database for /data
+## Author: Seff P
+## Version: 20191129
+
+source check-root
+source setcolor
+
+echo -ne "Scanning /data\t\t"
+updatedb -U "/data" && DONE || FAIL
+
+TUSER=$(stat -c %U /data/data/com.termux)
+chown -R $TUSER.$TUSER /data/data/com.termux/files/usr/var/mlocate/mlocate.db

@@ -1,0 +1,13 @@
+#!/system/xbin/bash
+
+## Short vibrate N times
+## Author: Seff P
+## Version: 20191129
+
+[[ "$1" =~ ^[0-9]+$ ]] && N=$1 || N=1
+
+for i in $(seq $N)
+do
+    termux-vibrate -fd 50 &
+    sleep 0.2
+done

@@ -1,0 +1,20 @@
+if [[ -z $BG ]] ; then
+    R='\e[01;31m'
+    G='\e[01;32m'
+    Y='\e[01;33m'
+    B='\e[01;34m'
+    W='\e[00m'
+fi
+
+DONE() {
+    echo -e "${G} [ DONE ]${W}"
+    }
+FAIL() {
+    echo -e "${R} [ FAIL ]${W}"
+    }
+SKIP() {
+    echo -e "${Y} [ SKIP ]${W}"
+    }
+BEGIN() {
+    echo -e "${B} [ BEGIN ]${W}"
+    }

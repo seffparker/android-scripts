@@ -1,0 +1,53 @@
+#!/system/xbin/bash
+
+## Detatch given apps from PlayStore
+## Author: Seff P
+## Version: 20191129
+
+source setdir
+source setcolor
+source logdate
+
+PLAY_DB_DIR="/data/data/com.android.vending/databases"
+
+doDetach () {
+    PKG_URI=$1
+	echo -n "$(logdate) Detaching $PKG_URI "
+	CHECK=$(sqlite3 /data/data/com.android.vending/databases/library.db "SELECT doc_id FROM ownership WHERE doc_id = '$PKG_URI'";)
+
+	if [ -z "$CHECK" ]
+	then
+	    SKIP
+	else
+	    sqlite3 $PLAY_DB_DIR/library.db "DELETE from ownership where doc_id = '$PKG_URI'";
+	    sqlite3 $PLAY_DB_DIR/localappstate.db "DELETE from appstate where package_name ='$PKG_URI'";
+	    DETACHED=true
+	    DONE
+	fi
+}
+
+doCleanUp () {
+	if [[ "$DETACHED" ]]
+		then
+		setenforce 0
+		/system/bin/am force-stop com.android.vending
+		setenforce 1
+	fi
+}
+
+case $1 in
+  --all)
+    for PKG_URI in $(cat $ETC/detach.list)
+        do doDetach $PKG_URI
+        done
+	doCleanUp
+    ;;
+  "")
+    echo "Usage: $(basename $0) [PKG_URI | --all]"
+	exit 2
+    ;;
+  *)
+    doDetach $1
+	doCleanUp
+    ;;
+esac

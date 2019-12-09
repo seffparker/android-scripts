@@ -1,0 +1,74 @@
+#!/system/xbin/bash
+
+## Auto-stop defined media players and turn off Bluetooth
+## Author: Seff P
+## Version: 20191129
+
+check-root || exit
+
+source setdir
+source setcolor
+
+MY_PID=$RUN/audio-sleep.pid
+
+if [ "$2" == "--daemon" ]
+then
+    termux-wake-lock
+    for MIN in $(seq $1 | sort -nr)
+    do
+        termux-notification --content "Audio player will stop in $MIN minutes" --ongoing --id audio-sleep --alert-once &
+        sleep 60
+    done
+    termux-notification --content "Audio player is being stopped" --ongoing --id audio-sleep
+    CUR_VOL=$(termux-volume | awk '/volume/ {i++} i==7 {print ($2+0)}')
+    for VOL in $(seq $CUR_VOL | sort -nr)
+        do
+        termux-volume music $VOL
+        sleep $VOL
+        done
+    setenforce 0
+    am force-stop com.jrtstudio.AnotherMusicPlayer
+    am force-stop com.google.android.youtube
+    am force-stop com.audlabs.viperfx
+    am force-stop com.pittvandewitt.viperfx
+    setenforce 1
+    termux-volume music $CUR_VOL
+    # termux-tts-speak "Turning off audio"
+    service call bluetooth_manager 8 &> /dev/null
+    rm -f $MY_PID
+    termux-notification-remove audio-sleep
+    termux-wake-unlock
+    q
+    exit
+fi
+
+if echo $1 | grep -vqE '^[0-9]+$' 2> /dev/null
+    then
+    echo "USAGE: `basename $0` <minutes-to-sleep>"
+    exit 1
+fi
+
+if [ "$1" == "0" ]
+    then
+    if kill -9 $(cat $MY_PID 2> /dev/null) &> /dev/null
+    then
+        echo -ne "INFO: Canceling audio-sleep "
+        rm -f $MY_PID &> /dev/null
+        termux-notification-remove audio-sleep
+        termux-wake-unlock
+        DONE
+    else
+        echo -e "NOTICE: No sleep job to turn off $(SKIP)"
+    fi
+    exit 0
+fi
+
+if kill -0 $(cat $MY_PID 2> /dev/null) &> /dev/null
+    then echo -e "ERROR: Another sleep is already scheduled! Use `basename $0` 0 to stop it $(FAIL)"
+else
+    echo -ne "INFO: Scheduling audio player to turn off after $1 minutes "
+    $0 $1 --daemon &>/dev/null &
+    echo $! > $MY_PID
+    # termux-tts-speak "Audio player will turn off in $1 minutes" &
+    DONE
+fi

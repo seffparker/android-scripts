@@ -1,0 +1,16 @@
+#!/system/xbin/bash
+
+## Load Termux environments
+## Author: Seff P
+## Version: 20191129
+
+source /system/xbin/termux-env
+
+pkill -9 -f files/usr/.*/termux-
+
+if [ -p /proc/self/fd/0 ]
+    then
+    cat - | "$@"
+else
+    "$@"
+fi

@@ -1,0 +1,14 @@
+#!/system/xbin/bash
+
+source check-root
+source setcolor
+
+/system/bin/mount -o remount,rw /vendor
+/system/bin/mount -o remount,rw /system
+/system/bin/mount -o remount,rw /
+
+if ! touch /write_check
+ then
+ echo -e "${R}ERROR: Failed to mount as RW!${W}"
+ exit 2
+fi

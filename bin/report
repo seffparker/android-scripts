@@ -1,0 +1,33 @@
+#!/system/xbin/bash
+
+## Generate various reports
+## Author: Seff P
+## Version: 20191129
+
+check-root &> /dev/null || exec /sbin/su -c 'report'
+source setdir
+source termux-env
+
+echo -ne "$HOSTNAME engine start:\t"
+date -r $LOG/post-boot.log 2> /dev/null || echo UNKNOWN
+
+echo -ne "Last run of post-boot:\t"
+date -r $LOG/post-boot.datelog 2> /dev/null || echo UNKNOWN
+
+echo -ne "Last run of daily-jobs:\t"
+date -r $LOG/daily-jobs.datelog 2> /dev/null || echo UNKNOWN
+
+echo -ne "APT update date:\t"
+cat $VAR/pkg-update.last_run 2> /dev/null || echo UNKNOWN
+
+echo -ne "Adblock check date:\t"
+cat $VAR/adblock-update.last_run 2> /dev/null || echo UNKNOWN
+
+echo -ne "Adblock database date:\t"
+date -d "$(grep '# Date:' /etc/hosts | cut -d' ' -f3-7)" 2> /dev/null || echo UNKNOWN
+
+echo -ne "crond service status:\t"
+pgrep crond &> /dev/null && echo "RUNNING (PID: $(pidof crond))" || echo STOPPED
+
+echo -ne "Load average:\t\t"
+cat /proc/loadavg | cut -d' ' -f1-3

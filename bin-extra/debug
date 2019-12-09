@@ -1,0 +1,5 @@
+#!/system/xbin/bash
+
+date
+echo $-
+env

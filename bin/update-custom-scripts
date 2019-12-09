@@ -1,0 +1,16 @@
+#!/system/xbin/bash
+
+## Sync user scripts to system path
+## Author: Seff P
+## Version: 20191129
+
+# Preparation
+source check-root
+remount-rw || exit 2
+
+source setdir
+source setcolor
+
+echo -ne "Updating custom scripts "
+rsync -u --inplace $BIN/* /system/xbin/ --chmod=755 --chown=root:shell && DONE || FAIL
+remount-ro

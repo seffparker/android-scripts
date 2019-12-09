@@ -1,0 +1,69 @@
+#!/system/xbin/bash
+
+## Daily routine tasks
+## Author: Seff P
+## Version: 20191208
+
+source check-root
+source logdate
+source setdir
+source setcolor
+
+DATE_LOG="$LOG/daily-jobs.datelog"
+NET=NOT_CONNECTED
+NOTI_OPTS='--ongoing --id dailyjobs'
+J=1 # Index of first job
+N=5 # Total no. of jobs
+
+echo -e "$(logdate) daily-jobs $(BEGIN)"
+echo -en "$(logdate) Holding wake-lock "
+termux-wake-lock && DONE
+echo "$(logdate) SHELL=$BASH $BASH_VERSION"
+
+termux-notification ${NOTI_OPTS} --title "Running daily jobs: 0/$N" --content "Preparing..."
+
+logdate && uptime
+check-ping && NET=CONNECTED
+
+if [[ $BG && "$NET" == "NOT_CONNECTED" ]]
+    then
+    termux-notification ${NOTI_OPTS} --title "Running daily jobs: 0/$N" --content "Waiting 15 seconds for Internet..."
+    echo -e "$(logdate) Waiting for Internet"
+    vibrate 3
+    sleep 15
+    check-ping && NET=CONNECTED
+    fi
+
+if [[ $NET == "CONNECTED" ]]
+    then
+    termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Checking adblock updates..."
+    adblock update -s
+fi
+((J++))
+
+termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Optimizing memory & cache..."
+optimize-cache
+optimize-memory
+((J++))
+
+
+termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Generating maintenance report..."
+echo "$(logdate) $(pkg-update report)"
+echo "$(logdate) $(backup-sdcard report)"
+echo "$(logdate) $(optimize-db report)"
+((J++))
+
+termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Detaching apps from PlayStore..."
+detach-from-playstore --all
+((J++))
+
+
+# Finalize
+termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Finishing up..."
+sed -i 1d $DATE_LOG
+echo "$(logdate) $NET" >> $DATE_LOG
+echo -e "$(logdate) daily-jobs $(DONE)"
+echo -en "$(logdate) Releasing wake-lock "
+termux-wake-unlock && DONE
+termux-notification-remove dailyjobs
+vibrate 1

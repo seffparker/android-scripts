@@ -1,0 +1,117 @@
+#!/system/xbin/bash
+
+## Manage adblock via /etc/hosts
+## Author: Seff P
+## Version: 20191129
+
+source check-root
+
+source setdir
+source setcolor
+source logdate
+
+CURL="/system/bin/curl"
+MODE=$2
+[ $MODE ] || MODE="-#"
+
+case "$1" in
+ -e|e*)
+    echo -n "$(logdate) Enabling Adblock "
+    if [ -f /etc/hosts_disabled ]
+    then
+        remount-rw
+        mv -f /etc/hosts_disabled /etc/hosts
+        remount-ro
+        DONE
+    else
+        SKIP
+    fi
+    ;;
+  
+ -d|d*)
+    echo -n "$(logdate) Disabling Adblock "
+    if [ ! -f /etc/hosts_disabled ]
+    then
+        remount-rw
+        mv -f /etc/hosts /etc/hosts_disabled
+        remount-ro
+        DONE
+    else
+        SKIP
+    fi
+    ;;
+  
+ -u|u*)
+    if [ ! -f /etc/hosts ]
+    then
+        echo -e "$(logdate) Adblock is disabled. Update aborted!"
+        exit 1
+    fi
+    
+    echo -e "$(logdate) Updating Adblock $(BEGIN)"
+    CUR_BYTES=$(cat $VAR/hosts.comm_bytes)
+    echo -ne "$(logdate) Downloading update "
+    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts | busybox awk '/Content-Length/ {printf $2}')
+
+    if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
+        then SKIP
+        date > $VAR/adblock-update.last_run
+    elif [ -z "$NEW_BYTES" ]
+        then FAIL
+    else
+        PREV_RECORDS=$(cat $VAR/hosts.comm_records)
+        $CURL --insecure https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts -o $ETC/hosts.comm $MODE
+        echo -n $NEW_BYTES > $VAR/hosts.comm_bytes
+        CUR_RECORDS=$(grep -c ^0 $ETC/hosts.comm)
+        echo $CUR_RECORDS > $VAR/hosts.comm_records
+        NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
+        date > $VAR/adblock-update.last_run
+        echo -e "Database version: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
+        COMM_UPED=true
+        DONE
+    fi
+
+    echo -e "$(logdate) Community update: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
+    echo -e "$(logdate) Community entries:$(grep  "# Number" $ETC/hosts.comm | cut -d':' -f2)"
+    echo -en "$(logdate) User entries: "
+    grep -c ^0 $ETC/hosts.user
+
+    if ! md5sum -c $VAR/hosts.user_md5 &> /dev/null
+        then USER_UPED=true
+        md5sum $ETC/hosts.user > $VAR/hosts.user_md5
+    fi
+    
+    if ! md5sum -c $VAR/hosts.excludes_md5 &> /dev/null
+        then EXCL_UPED=true
+        md5sum $ETC/hosts.excludes > $VAR/hosts.excludes_md5
+    fi
+    
+    echo -en "$(logdate) Processing excludes "
+    if [[ "$COMM_UPED" || "$EXCL_UPED" ]]
+        then
+        for EXCLUDE in $(cat $ETC/hosts.excludes)
+            do
+            sed -i "/$EXCLUDE/d" $ETC/hosts.comm
+        done
+        DONE
+    else
+        SKIP
+    fi
+    echo -en "$(logdate) Applying new update "
+    if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
+        then
+        remount-rw
+        cp -f $ETC/hosts.comm /system/etc/hosts
+        cat $ETC/hosts.user >> /system/etc/hosts
+        chmod 644 /system/etc/hosts
+        remount-ro
+        DONE
+    else
+        SKIP
+    fi
+    ;;
+
+ *)
+    echo "Usage: $(basename $0) [-u|update | -e|enable -d|disable]"
+    ;;
+esac
