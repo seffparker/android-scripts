@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20191208
+## Version: 20191210
 
 source check-root
 source logdate
@@ -11,23 +11,26 @@ source setcolor
 
 DATE_LOG="$LOG/daily-jobs.datelog"
 NET=NOT_CONNECTED
-NOTI_OPTS='--ongoing --id dailyjobs'
 J=1 # Index of first job
 N=5 # Total no. of jobs
 
+notify () {
+    termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
+    }
+
 echo -e "$(logdate) daily-jobs $(BEGIN)"
 echo -en "$(logdate) Holding wake-lock "
-termux-wake-lock && DONE
+termux-wake-lock; DONE
 echo "$(logdate) SHELL=$BASH $BASH_VERSION"
 
-termux-notification ${NOTI_OPTS} --title "Running daily jobs: 0/$N" --content "Preparing..."
+notify 0 "Preparing..."
 
 logdate && uptime
 check-ping && NET=CONNECTED
 
 if [[ $BG && "$NET" == "NOT_CONNECTED" ]]
     then
-    termux-notification ${NOTI_OPTS} --title "Running daily jobs: 0/$N" --content "Waiting 15 seconds for Internet..."
+    notify 0 "Waiting 15 seconds for Internet..."
     echo -e "$(logdate) Waiting for Internet"
     vibrate 3
     sleep 15
@@ -36,34 +39,35 @@ if [[ $BG && "$NET" == "NOT_CONNECTED" ]]
 
 if [[ $NET == "CONNECTED" ]]
     then
-    termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Checking adblock updates..."
+    notify $J "Checking adblock updates..."
     adblock update -s
 fi
 ((J++))
 
-termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Optimizing memory & cache..."
+notify $J "Optimizing memory & cache..."
 optimize-cache
 optimize-memory
 ((J++))
 
 
-termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Generating maintenance report..."
+notify $J "Generating maintenance report..."
 echo "$(logdate) $(pkg-update report)"
 echo "$(logdate) $(backup-sdcard report)"
 echo "$(logdate) $(optimize-db report)"
 ((J++))
 
-termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Detaching apps from PlayStore..."
+notify $J "Detaching apps from PlayStore..."
 detach-from-playstore --all
 ((J++))
 
 
 # Finalize
-termux-notification ${NOTI_OPTS} --title "Running daily jobs: $J/$N" --content "Finishing up..."
+notify $J "Finishing up..."
 sed -i 1d $DATE_LOG
 echo "$(logdate) $NET" >> $DATE_LOG
 echo -e "$(logdate) daily-jobs $(DONE)"
 echo -en "$(logdate) Releasing wake-lock "
-termux-wake-unlock && DONE
 termux-notification-remove dailyjobs
 vibrate 1
+termux-wake-unlock
+DONE
