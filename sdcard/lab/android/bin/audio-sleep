@@ -1,11 +1,11 @@
 #!/system/xbin/bash
 
-## Auto-stop defined media players and turn off Bluetooth
+## Auto-stop media players and turn off Bluetooth
 ## Author: Seff P
 ## Version: 20200504
 
-check-root || exit
 
+source check-root
 source setdir
 source setcolor
 source /.bashrc
@@ -17,7 +17,7 @@ daemon () {
     termux-wake-lock
     for MIN in $(seq $1 | sort -nr)
     do
-        echo ${MIN} > ${STATUS}
+        echo -n ${MIN} > ${STATUS}
         termux-notification --content "Audio player will stop in $MIN minutes" --ongoing --id audio-sleep --alert-once \
         --button1 "Abort" \
         --button1-action "su -c 'audio-sleep 0'"\
@@ -36,13 +36,16 @@ daemon () {
     input keyevent 85 # pause media
     termux-volume music $CUR_VOL
     service call bluetooth_manager 8 &> /dev/null
-    rm -f $MY_PID
+    rm -f $MY_PID $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock
 }
 
 print_usage () {
-    echo "USAGE: `basename $0` <minutes-to-sleep>"
+    echo "USAGE:"
+    echo -e "\t`basename $0` <minutes-to-sleep>"
+    echo -e "\t`basename $0` +<minutes-to-extend>"
+    echo -e "\t`basename $0` 0 <zero-to-abort>"
     exit 1
 }
 
@@ -51,7 +54,7 @@ stop () {
     then
         pkill -xf "sleep 60"
         echo -ne "INFO: Canceling audio-sleep "
-        rm -f $MY_PID &> /dev/null
+        rm -f $MY_PID $STATUS &> /dev/null
         termux-notification-remove audio-sleep
         termux-wake-unlock
         DONE
