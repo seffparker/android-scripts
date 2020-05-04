@@ -1,3 +1,3 @@
-30 11,19 * * * /system/xbin/daily-jobs &> /sdcard/lab/android/log/daily-jobs.log
+30 11,19 * * * /system/xbin/daily-jobs
 
 # * * * * * bash /sdcard/lab/android/bin-extra/debug &> /sdcard/lab/android/log/debug.log

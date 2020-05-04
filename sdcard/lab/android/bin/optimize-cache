@@ -2,30 +2,34 @@
 
 ## Clean Android app caches from Internal storage
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200413
 
 source check-root
-source logdate
 source setdir
 source setcolor
 
-TARGET_DELETE_PERC="$(cat $ETC/optimize-cache.delete_percent 2> /dev/null  || echo 10)"
+TARGET_DELETE_PERC=10
+source $ETC/optimize-cache.conf
 
+if [[ $ENABLE == 1 ]]
+    then
+    echo "$(logdate) Scanning cache files $(BEGIN)"
+    CACHE_INT=$(du -kscx -d 1 /data/data/*/cache | awk '/total$/ {print $1}')
+    CACHE_SDC=$(du -kscx -d 1 /storage/emulated/0/Android/data/*/cache | awk '/total$/ {print $1}')
+    let CACHE_TOTAL=$CACHE_INT+CACHE_SDC
+    let TARGET_DELETE_KB=$CACHE_TOTAL/"(100/$TARGET_DELETE_PERC)"
 
-echo "$(logdate) Scanning cache files $(BEGIN)"
-CACHE_INT=$(du -kscx -d 1 /data/data/*/cache | awk '/total$/ {print $1}')
-CACHE_SDC=$(du -kscx -d 1 /storage/emulated/0/Android/data/*/cache | awk '/total$/ {print $1}')
-let CACHE_TOTAL=$CACHE_INT+CACHE_SDC
-let TARGET_DELETE_KB=$CACHE_TOTAL/"(100/$TARGET_DELETE_PERC)"
+    CUR_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
+    let TARGET_FREE=$CUR_FREE+$TARGET_DELETE_KB
 
-CUR_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
-let TARGET_FREE=$CUR_FREE+$TARGET_DELETE_KB
-
-echo "$(logdate) Deleting caches of $TARGET_DELETE_KB KB ($TARGET_DELETE_PERC% of $CACHE_TOTAL)"
-unset LD_LIBRARY_PATH LD_PRELOAD
-setenforce 0
-/system/bin/pm trim-caches ${TARGET_FREE}K
-setenforce 1
-NEW_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
-echo "$(logdate) Storage free before: ${CUR_FREE} KB"
-echo "$(logdate) Storage free after:  ${NEW_FREE} KB"
+    echo "$(logdate) Deleting caches of $TARGET_DELETE_KB KB ($TARGET_DELETE_PERC% of $CACHE_TOTAL)"
+     unset LD_LIBRARY_PATH LD_PRELOAD
+    setenforce 0
+    /system/bin/pm trim-caches ${TARGET_FREE}K
+    setenforce 1
+    NEW_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
+    echo "$(logdate) Storage free before: ${CUR_FREE} KB"
+    echo "$(logdate) Storage free after:  ${NEW_FREE} KB"
+else
+    echo "$(logdate) Cache cleaning is disabled $(SKIP)"
+fi    

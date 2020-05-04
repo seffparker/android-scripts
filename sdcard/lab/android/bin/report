@@ -12,10 +12,10 @@ echo -ne "$HOSTNAME engine start:\t"
 date -r $LOG/post-boot.log 2> /dev/null || echo UNKNOWN
 
 echo -ne "Last run of post-boot:\t"
-date -r $LOG/post-boot.datelog 2> /dev/null || echo UNKNOWN
+date -r $LOG/post-boot.history 2> /dev/null || echo UNKNOWN
 
 echo -ne "Last run of daily-jobs:\t"
-date -r $LOG/daily-jobs.datelog 2> /dev/null || echo UNKNOWN
+date -r $LOG/daily-jobs.history 2> /dev/null || echo UNKNOWN
 
 echo -ne "APT update date:\t"
 cat $VAR/pkg-update.last_run 2> /dev/null || echo UNKNOWN

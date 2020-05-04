@@ -1,0 +1,32 @@
+#!/system/xbin/bash
+
+## Update ES Explorer
+## Author: Seff P.
+## Version: 20200502
+
+source check-root
+source check-ping
+source setdir
+source setcolor
+
+URL="http://openbox.mobilem.360.cn/index/d/sid/3571"
+APK="$VAR/com.estrongs.android.pop.apk"
+PKG_ID="com.estrongs.android.pop"
+MD5="$VAR/es-explorer.md5"
+
+echo -n "Checking for ES Explorer update "
+wget -c -nv -t 0 -T 5 $URL -O $APK && DONE || FAIL
+
+echo -n "Updating ES Explorer "
+if ! md5sum -c $MD5 &> /dev/null
+    then
+    md5sum $APK > $MD5
+    setenforce 0
+    pm install -f $APK &> /dev/null
+    setenforce 1
+    PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
+    termux-notification --title "ES Explorer Updated!" --content "Version: $PKG_VERSION" --id es-update
+    DONE
+else
+    SKIP
+fi

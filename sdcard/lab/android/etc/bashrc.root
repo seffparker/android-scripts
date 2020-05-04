@@ -7,7 +7,7 @@
 
 export SHELL=/system/xbin/bash
 export USER=$(whoami)
-export HOME=/
+export HOME=/data/root/
 export TERM=xterm
 export TMPDIR=/data/local/tmp
 export LD_LIBRARY_PATH=/system/lib64:/data/data/com.termux/files/usr/lib
@@ -34,7 +34,7 @@ use_color=true
 
 alias ll='busybox ls -la --color'
 alias ps='busybox ps'
-alias su='/sbin/su -c /system/xbin/bash'
+alias su='/sbin/su -s /system/xbin/bash'
 
 # enable colorful terminal
 if [[ ${EUID} == 0 ]] ; then

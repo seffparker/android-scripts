@@ -1,6 +1,8 @@
-logdate() {
- echo -n "$(date '+[%F %X %Z] -')"
-}
-printdate(){
-    date '+%F %X %Z'
-}
+if [ -p /proc/self/fd/0 ]
+	then cat - | while read -r message
+	do
+        echo "$(date +"[%F %X %Z] -") $message"
+	done
+else
+	echo "$(date +'[%F %X %Z]') -$*"
+fi

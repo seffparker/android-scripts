@@ -2,21 +2,28 @@
 
 ## Auto-stop defined media players and turn off Bluetooth
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200504
 
 check-root || exit
 
 source setdir
 source setcolor
+source /.bashrc
 
 MY_PID=$RUN/audio-sleep.pid
+STATUS=$VAR/audio-sleep.left
 
-if [ "$2" == "--daemon" ]
-then
+daemon () {
     termux-wake-lock
     for MIN in $(seq $1 | sort -nr)
     do
-        termux-notification --content "Audio player will stop in $MIN minutes" --ongoing --id audio-sleep --alert-once &
+        echo ${MIN} > ${STATUS}
+        termux-notification --content "Audio player will stop in $MIN minutes" --ongoing --id audio-sleep --alert-once \
+        --button1 "Abort" \
+        --button1-action "su -c 'audio-sleep 0'"\
+        --button2 "Extend 30m" \
+        --button2-action "su -c 'audio-sleep +30'"\
+        &
         sleep 60
     done
     termux-notification --content "Audio player is being stopped" --ongoing --id audio-sleep
@@ -24,34 +31,25 @@ then
     for VOL in $(seq $CUR_VOL | sort -nr)
         do
         termux-volume music $VOL
-        sleep $VOL
+        sleep 5
         done
-    setenforce 0
-    am force-stop com.jrtstudio.AnotherMusicPlayer
-    am force-stop com.google.android.youtube
-    am force-stop com.audlabs.viperfx
-    am force-stop com.pittvandewitt.viperfx
-    setenforce 1
+    input keyevent 85 # pause media
     termux-volume music $CUR_VOL
-    # termux-tts-speak "Turning off audio"
     service call bluetooth_manager 8 &> /dev/null
     rm -f $MY_PID
     termux-notification-remove audio-sleep
     termux-wake-unlock
-    q
-    exit
-fi
+}
 
-if echo $1 | grep -vqE '^[0-9]+$' 2> /dev/null
-    then
+print_usage () {
     echo "USAGE: `basename $0` <minutes-to-sleep>"
     exit 1
-fi
+}
 
-if [ "$1" == "0" ]
-    then
+stop () {
     if kill -9 $(cat $MY_PID 2> /dev/null) &> /dev/null
     then
+        pkill -xf "sleep 60"
         echo -ne "INFO: Canceling audio-sleep "
         rm -f $MY_PID &> /dev/null
         termux-notification-remove audio-sleep
@@ -60,15 +58,35 @@ if [ "$1" == "0" ]
     else
         echo -e "NOTICE: No sleep job to turn off $(SKIP)"
     fi
-    exit 0
-fi
+}
 
+extend () {
+    MIN_LEFT=$(cat $STATUS)
+    let MIN=${MIN_LEFT}${1}
+    start $MIN
+}
+
+start () {
 if kill -0 $(cat $MY_PID 2> /dev/null) &> /dev/null
-    then echo -e "ERROR: Another sleep is already scheduled! Use `basename $0` 0 to stop it $(FAIL)"
-else
-    echo -ne "INFO: Scheduling audio player to turn off after $1 minutes "
-    $0 $1 --daemon &>/dev/null &
-    echo $! > $MY_PID
-    # termux-tts-speak "Audio player will turn off in $1 minutes" &
-    DONE
+    then stop &> /dev/null
 fi
+    echo -ne "INFO: Scheduling audio player to turn off after $1 minutes "
+    daemon $1 &>/dev/null &
+    echo $! > $MY_PID
+    DONE
+}
+
+case $1 in
+    0)
+       stop
+       ;;
+    [1-9]*)
+       start $1
+       ;;
+    +[1-9]*)
+       extend $1
+       ;;
+    *)
+       print_usage
+       ;;
+esac

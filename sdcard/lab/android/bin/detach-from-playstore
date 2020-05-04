@@ -6,14 +6,13 @@
 
 source setdir
 source setcolor
-source logdate
 
 PLAY_DB_DIR="/data/data/com.android.vending/databases"
 
 doDetach () {
     PKG_URI=$1
 	echo -n "$(logdate) Detaching $PKG_URI "
-	CHECK=$(sqlite3 /data/data/com.android.vending/databases/library.db "SELECT doc_id FROM ownership WHERE doc_id = '$PKG_URI'";)
+	CHECK=$(sqlite3 $PLAY_DB_DIR/library.db "SELECT doc_id FROM ownership WHERE doc_id = '$PKG_URI'";)
 
 	if [ -z "$CHECK" ]
 	then
@@ -36,14 +35,14 @@ doCleanUp () {
 }
 
 case $1 in
-  --all)
+  --auto)
     for PKG_URI in $(cat $ETC/detach.list)
         do doDetach $PKG_URI
         done
 	doCleanUp
     ;;
   "")
-    echo "Usage: $(basename $0) [PKG_URI | --all]"
+    echo "Usage: $(basename $0) [PKG_URI | --auto]"
 	exit 2
     ;;
   *)

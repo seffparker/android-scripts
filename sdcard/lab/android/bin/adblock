@@ -2,14 +2,14 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200421
 
 source check-root
 
 source setdir
 source setcolor
-source logdate
 
+SYS_HOSTS="/system/etc/hosts"
 CURL="/system/bin/curl"
 MODE=$2
 [ $MODE ] || MODE="-#"
@@ -71,8 +71,8 @@ case "$1" in
         DONE
     fi
 
-    echo -e "$(logdate) Community update: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
-    echo -e "$(logdate) Community entries:$(grep  "# Number" $ETC/hosts.comm | cut -d':' -f2)"
+    echo -e "$(logdate) Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
+    echo -e "$(logdate) Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
     echo -en "$(logdate) User entries: "
     grep -c ^0 $ETC/hosts.user
 
@@ -101,9 +101,10 @@ case "$1" in
     if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
         then
         remount-rw
-        cp -f $ETC/hosts.comm /system/etc/hosts
-        cat $ETC/hosts.user >> /system/etc/hosts
-        chmod 644 /system/etc/hosts
+        cp -f $ETC/hosts.comm $ETC/hosts.final
+        cat $ETC/hosts.user >> $ETC/hosts.final
+        cp -f $ETC/hosts.final $SYS_HOSTS
+        chmod 644 $SYS_HOSTS
         remount-ro
         DONE
     else

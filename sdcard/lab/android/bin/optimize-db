@@ -5,7 +5,6 @@
 ## Version: 20191204
 
 source check-root
-source logdate
 source setdir
 source setcolor
 

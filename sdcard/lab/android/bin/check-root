@@ -8,6 +8,6 @@ source setcolor
 
 if ! [ $(id -u) == "0" ]
  then echo -e "${R}ERROR: Root privilege required!${W}"
- vibrate
+ # vibrate
  exit 1
 fi

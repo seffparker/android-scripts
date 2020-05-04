@@ -4,7 +4,6 @@
 ## Author: Seff P
 ## Version: 20191203
 
-source logdate
 source setdir
 source setcolor
 
@@ -31,6 +30,7 @@ case $1 in
 	then
 	    echo -e "$(logdate) pkg-update $(BEGIN)"
 	    apt update
+	    apt autoremove -y
 	    apt full-upgrade -y
 	    apt list --installed > $VAR/pkg-update.installed_pkg
 	    date > $VAR/pkg-update.last_run

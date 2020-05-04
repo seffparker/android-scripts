@@ -2,17 +2,20 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20191210
+## Version: 20200413
 
 source check-root
-source logdate
 source setdir
 source setcolor
 
-DATE_LOG="$LOG/daily-jobs.datelog"
+DATE_LOG="$LOG/daily-jobs.history"
+OUTPUT_LOG="$LOG/daily-jobs.log"
 NET=NOT_CONNECTED
 J=1 # Index of first job
-N=5 # Total no. of jobs
+N=6 # Total no. of jobs
+
+cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
+exec &> >(tee "$OUTPUT_LOG")
 
 notify () {
     termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
@@ -39,9 +42,13 @@ if [[ $BG && "$NET" == "NOT_CONNECTED" ]]
 
 if [[ $NET == "CONNECTED" ]]
     then
-    notify $J "Checking adblock updates..."
+    notify $J "Checking adblock update..."
     adblock update -s
 fi
+((J++))
+
+notify $J "Checking ES Explorer update..."
+es-explorer | logdate
 ((J++))
 
 notify $J "Optimizing memory & cache..."
@@ -57,9 +64,8 @@ echo "$(logdate) $(optimize-db report)"
 ((J++))
 
 notify $J "Detaching apps from PlayStore..."
-detach-from-playstore --all
+detach-from-playstore --auto
 ((J++))
-
 
 # Finalize
 notify $J "Finishing up..."

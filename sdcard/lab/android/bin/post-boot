@@ -2,18 +2,18 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200413
 
 source check-root
 remount-rw || exit 2
 
-source logdate
 source setdir
 export BG=true
 source /sdcard/lab/android/etc/bashrc.root
+source /sdcard/lab/android/etc/dns
 
 HOSTNAME="batmobile"
-DATE_LOG="${LOG}/post-boot.datelog"
+DATE_LOG="${LOG}/post-boot.history"
 
 sed -i 1d $DATE_LOG
 [ $1 ] && MODE="$1" || MODE="manual trigger"
@@ -83,11 +83,11 @@ echo -n "$(logdate) Disabling loggings  "
 echo $(logdate) Remounting as RO
     remount-ro
 
-echo -n "$(logdate) CloudFlare DNS tweak  "
-    if iptables -t nat -L | grep -q ":53$"
+echo -n "$(logdate) DNS tweak via $CUSTOM_DNS  "
+    if iptables -t nat -L | grep -q "${CUSTOM_DNS}:53"
         then echo "[SKIP]"
     else
-        iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53
+        iptables -t nat -I OUTPUT -p udp --dport 53 -j DNAT --to-destination ${CUSTOM_DNS}:53
         echo "[DONE]"
     fi
 

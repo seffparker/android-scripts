@@ -5,7 +5,6 @@
 ## Version: 20191129
 
 source check-root
-source logdate
 source setcolor
 
 echo -ne "$(logdate) Saving buffers "
@@ -13,7 +12,7 @@ echo -ne "$(logdate) Saving buffers "
     DONE
 
 echo -ne "$(logdate) Dropping caches "
-    echo 3 > /proc/sys/vm/drop_caches
+    echo 1 > /proc/sys/vm/drop_caches
     DONE
 
 echo -ne "$(logdate) Compacting memory "

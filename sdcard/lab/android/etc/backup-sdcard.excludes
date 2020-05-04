@@ -7,6 +7,7 @@ tmp
 debug_log
 logs
 log1.txt
+Movies
 ramdump
 .thumbnails
 recycle
@@ -17,5 +18,12 @@ TempImages
 *.tmp
 *.tmp.chck
 *.log
+WhatsApp Stickers
 .Statuses
 .trash
+persist_log*.log
+log*.txt
+.app_icon_back
+instabug
+free_frag
+dump

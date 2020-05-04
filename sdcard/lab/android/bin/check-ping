@@ -1,1 +1,7 @@
-ping -c 1 -s 0 -w 2 1.1.1.1 &> /dev/null
+source setcolor
+
+if ! ping -c 1 -s 0 -w 2 1.1.1.1 &> /dev/null
+    then
+    echo -e "${R}ERROR: No Internet!${W}"
+    exit 1
+fi

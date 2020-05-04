@@ -2,7 +2,7 @@
 
 {
     while [ "$(getprop sys.boot_completed)" != "1" ]
-        do sleep 5
+        do sleep 3
         done
     /system/xbin/bash /system/xbin/post-boot autorun &> /sdcard/lab/android/log/post-boot.log
 } &
