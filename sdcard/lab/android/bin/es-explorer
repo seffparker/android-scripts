@@ -1,32 +1,63 @@
 #!/system/xbin/bash
 
-## Update ES Explorer
+## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 20200502
+## Version: 20200520
 
 source check-root
 source check-ping
-source setdir
-source setcolor
+source set-dir
+source set-color
 
 URL="http://openbox.mobilem.360.cn/index/d/sid/3571"
-APK="$VAR/com.estrongs.android.pop.apk"
+APK="/sdcard/Backups/apps/com.estrongs.android.pop.apk"
 PKG_ID="com.estrongs.android.pop"
-MD5="$VAR/es-explorer.md5"
+PKG_NAME="ES Explorer"
+BYTES="$VAR/$PKG_ID.bytes"
 
-echo -n "Checking for ES Explorer update "
-wget -c -nv -t 0 -T 5 $URL -O $APK && DONE || FAIL
 
-echo -n "Updating ES Explorer "
-if ! md5sum -c $MD5 &> /dev/null
-    then
-    md5sum $APK > $MD5
+check_update () {
+    echo -n "Checking for ${PKG_NAME} update "
+    OLD_BYTES=$(cat $BYTES)
+    NEW_BYTES=$(curl -sIL --connect-timeout 5 $URL | awk '/Content-Length:/ {print $2}')
+
+    if [[ $NEW_BYTES == $OLD_BYTES ]]
+        then SKIP
+        return 2
+    elif [[ -z $NEW_BYTES ]]
+        then FAIL
+        return 1
+    else
+        DONE
+        termux-notification --title "${PKG_NAME} update available" --id apk-update
+        return 0
+    fi
+}
+
+download_update () {
+    PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
+    echo "Current version: $PKG_VERSION"
+    echo "Downloading $PKG_NAME update..."
+    wget -t 0 -T 10 $URL -O $APK
+    echo -n "Updating ${PKG_NAME} "
     setenforce 0
     pm install -f $APK &> /dev/null
     setenforce 1
-    PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
-    termux-notification --title "ES Explorer Updated!" --content "Version: $PKG_VERSION" --id es-update
     DONE
-else
-    SKIP
-fi
+    echo $NEW_BYTES > $BYTES
+    PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
+    echo "Updated version: $PKG_VERSION"
+}
+
+case $1 in
+    -c | c* )
+        check_update
+        ;;
+    -u | u* )
+        check_update && download_update
+        ;;
+    *)
+        echo "Usage: -c|check | -u|update"
+        exit 1
+        ;;
+esac

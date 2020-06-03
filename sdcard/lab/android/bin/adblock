@@ -2,12 +2,12 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20200421
+## Version: 20200520
 
 source check-root
 
-source setdir
-source setcolor
+source set-dir
+source set-color
 
 SYS_HOSTS="/system/etc/hosts"
 CURL="/system/bin/curl"
@@ -71,14 +71,13 @@ case "$1" in
         DONE
     fi
 
-    echo -e "$(logdate) Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
-    echo -e "$(logdate) Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
-    echo -en "$(logdate) User entries: "
-    grep -c ^0 $ETC/hosts.user
-
+    echo -ne "$(logdate) Updating user entries "
     if ! md5sum -c $VAR/hosts.user_md5 &> /dev/null
         then USER_UPED=true
         md5sum $ETC/hosts.user > $VAR/hosts.user_md5
+        DONE
+    else
+        SKIP
     fi
     
     if ! md5sum -c $VAR/hosts.excludes_md5 &> /dev/null
@@ -110,8 +109,14 @@ case "$1" in
     else
         SKIP
     fi
+    
+    echo -e "$(logdate) Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
+    echo -e "$(logdate) Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
+    
+    USER_REC=$(grep -c ^0 $ETC/hosts.user)
+    echo -e "$(logdate) User entries: $USER_REC"
+    echo -e "$(logdate) Updating Adblock $(DONE)"
     ;;
-
  *)
     echo "Usage: $(basename $0) [-u|update | -e|enable -d|disable]"
     ;;

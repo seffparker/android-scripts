@@ -5,8 +5,8 @@
 ## Version: 20191204
 
 source check-root
-source setdir
-source setcolor
+source set-dir
+source set-color
 
  case $1 in
  -r|r*)

@@ -5,7 +5,7 @@
 ## Version: 20191129
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
-source setdir
+source set-dir
 source termux-env
 
 echo -ne "$HOSTNAME engine start:\t"

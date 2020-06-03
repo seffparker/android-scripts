@@ -1,0 +1,54 @@
+#!/system/xbin/bash
+
+# Report charing status on notification shade
+# Author: Seff P.
+# Version: 20200603
+
+source check-root
+source set-dir
+
+PID_FILE=$RUN/charging-monitor.pid
+
+daemon () {
+        while [[ $STATE == 2 && $LEVEL != "100%" ]]
+        do
+            SOURCE=$(echo "$DUMP" | awk '/AC/ {if ($NF == "true") print "AC"; else print "USB"}')
+            VOLTAGE=$(echo "$DUMP" | awk '/charging voltage:/ {print $NF/1000000 "v"}')
+            CURRENT=$(echo "$DUMP" | awk '/charging current:/ {if ($NF >= 1000000) print $NF/1000000 "A"; else print $NF/1000 "mA"}')
+            LEVEL=$(echo "$DUMP" | awk '/level:/ {print $NF "%"}')
+            VOLT=$(echo "$DUMP" | awk '/  voltage:/ {print $NF/1000 "v"}')
+            TEMP=$(echo "$DUMP" | awk '/temperature:/ {print $NF/10 "°C"}')
+            termux-notification --alert-once -i charging-monitor \
+            --ongoing \
+            -t "$SOURCE charging at $VOLTAGE / $CURRENT" \
+            -c "Battery is $LEVEL charged to $VOLT and is at $TEMP"
+            # echo "$SOURCE $VOLTAGE $CURRENT $VOLT $LEVEL $VOLT $TEMP"
+            # re-asses
+            sleep 5
+            DUMP=$(dumpsys battery)
+            STATE=$(echo "$DUMP" | awk '/status:/ {print $NF}')
+        done
+        termux-notification-remove charging-monitor
+}
+
+# main ()
+
+PID=$(cat $PID_FILE 2> /dev/null)
+if pgrep -f $0 | grep -wq "^${PID}$"
+    then
+    echo -e "Another instance is running $(FAIL)"
+    exit 1
+else
+    DUMP=$(dumpsys battery)
+    STATE=$(echo "$DUMP" | awk '/status:/ {print $NF}')
+    LEVEL=$(echo "$DUMP" | awk '/level:/ {print $NF "%"}')
+    if [[ $STATE == 2 && $LEVEL != "100%" ]]
+        then
+        echo -n "Starting charging-monitor daemon "
+        daemon &> /dev/null &
+        echo $! > $PID_FILE
+        DONE
+    else
+        echo -e "Battery is not being charged $(SKIP)"
+    fi
+fi

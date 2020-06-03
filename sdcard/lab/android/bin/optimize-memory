@@ -5,7 +5,7 @@
 ## Version: 20191129
 
 source check-root
-source setcolor
+source set-color
 
 echo -ne "$(logdate) Saving buffers "
     sync

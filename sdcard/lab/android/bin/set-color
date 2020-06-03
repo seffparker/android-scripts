@@ -1,20 +1,29 @@
+# Set styles for common status outputs
+
 if [[ -z $BG ]] ; then
     R='\e[01;31m'
     G='\e[01;32m'
     Y='\e[01;33m'
-    B='\e[01;34m'
+    B='\e[01;36m'
     W='\e[00m'
 fi
 
-DONE() {
+DONE () {
     echo -e "${G} [ DONE ]${W}"
     }
-FAIL() {
+OK () {
+    echo -e "${G} [ OK ]${W}"
+    }
+UPDATED () {
+    echo -e "${G} [ UPDATED ]${W}"
+    }    
+
+FAIL () {
     echo -e "${R} [ FAIL ]${W}"
     }
-SKIP() {
+SKIP () {
     echo -e "${Y} [ SKIP ]${W}"
     }
-BEGIN() {
+BEGIN () {
     echo -e "${B} [ BEGIN ]${W}"
     }

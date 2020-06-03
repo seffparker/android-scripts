@@ -4,8 +4,8 @@
 ## Author: Seff P
 ## Version: 20191203
 
-source setdir
-source setcolor
+source set-dir
+source set-color
 
 case $1 in
  -r|r*)

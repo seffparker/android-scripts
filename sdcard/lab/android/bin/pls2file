@@ -6,7 +6,7 @@
 
 source check-root
 source termux-env
-source setcolor
+source set-color
 
 SRC=/sdcard/Playlists/Sync.m3u8
 

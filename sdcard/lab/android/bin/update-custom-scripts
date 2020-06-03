@@ -8,8 +8,8 @@
 source check-root
 remount-rw || exit 2
 
-source setdir
-source setcolor
+source set-dir
+source set-color
 
 echo -ne "Updating custom scripts "
 rsync -u --inplace $BIN/* /system/xbin/ --chmod=755 --chown=root:shell && DONE || FAIL

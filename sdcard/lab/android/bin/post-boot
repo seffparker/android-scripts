@@ -7,7 +7,7 @@
 source check-root
 remount-rw || exit 2
 
-source setdir
+source set-dir
 export BG=true
 source /sdcard/lab/android/etc/bashrc.root
 source /sdcard/lab/android/etc/dns
