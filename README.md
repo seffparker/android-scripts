@@ -9,4 +9,4 @@ These scripts are wrote to make my personal Android experience easier and produc
 - **Root:** Magisk
 
 ## Disclaimer
-Not all scripts may not be useful to you. I'm not responsible for anything happens to your device or data after using these scripts.
+Not all scripts may be useful to you. I'm not responsible for anything happens to your device or data after using these scripts.
