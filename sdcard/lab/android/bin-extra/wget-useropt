@@ -1,2 +1,0 @@
-cd /sdcard/Download/
-wget -c -t 0 -T 30 $1
