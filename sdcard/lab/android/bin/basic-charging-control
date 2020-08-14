@@ -6,7 +6,6 @@
 
 source check-root
 source set-dir
-source set-dir
 source $ETC/bcc.conf
 
 chmod u+w $CHARGE_FILE $CURR_LIMIT_FILE
