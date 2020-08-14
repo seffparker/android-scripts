@@ -5,9 +5,16 @@
 # that can't tolerate any output.  So make sure this doesn't display
 # anything or bad things will happen !
 
+# exit if not root
+
+if [[ ${EUID} == 0 ]] ; then
+    export HOME=/data/root/
+fi
+
+source set-dir
+
 export SHELL=/system/xbin/bash
 export USER=$(whoami)
-export HOME=/data/root/
 export TERM=xterm
 export TMPDIR=/data/local/tmp
 export LD_LIBRARY_PATH=/system/lib64:/data/data/com.termux/files/usr/lib
@@ -34,7 +41,8 @@ use_color=true
 
 alias ll='busybox ls -la --color'
 alias ps='busybox ps'
-alias su='/sbin/su -s /system/xbin/bash'
+alias su='/sbin/su -s /system/xbin/bash --login'
+export HISTCONTROL=ignoreboth:erasedups
 
 # enable colorful terminal
 if [[ ${EUID} == 0 ]] ; then
