@@ -37,15 +37,6 @@ hide_status () {
     BREAK=break
 }
 
-sleep_dog () {
-    unset BREAK
-    for ((i=0; i < $1; i++))
-        do
-        sleep $SLEEP_SHORT
-        $BREAK
-    done
-}
-
 daemon_run () {
 trap set_cycle USR1
 trap set_super USR2
