@@ -1,0 +1,248 @@
+#!/system/xbin/bash
+
+# Basic charging control and status notification
+# Author: Seff P.
+# Version: 20200814
+
+source check-root
+source set-dir
+source set-dir
+source $ETC/bcc.conf
+
+chmod u+w $CHARGE_FILE $CURR_LIMIT_FILE
+
+set_cycle () {
+    MODE="Cycle"
+    LEVEL_MAX=$CYCLE_LEVEL_MAX
+    LEVEL_MIN=$CYCLE_LEVEL_MIN
+    BUTTON1_TEXT="Supercharge 🚀"
+    BUTTON1_ACTION="su -c 'pkill -l USR2 -f $0'"
+    SETTLED=false
+    BREAK=break
+}
+
+set_super () {
+    MODE="Super"
+    LEVEL_MAX=$SUPER_LEVEL_MAX
+    LEVEL_MIN=$SUPER_LEVEL_MIN
+    BUTTON1_TEXT="Cyclecharge ♻️"
+    BUTTON1_ACTION="su -c 'pkill -l USR1 -f $0'"
+    IS_DISABLED=true
+    SETTLED=false
+    BREAK=break
+}
+
+hide_status () {
+    SHOW_STATUS=false
+    termux-notification-remove bcc
+    BREAK=break
+}
+
+sleep_dog () {
+    unset BREAK
+    for ((i=0; i < $1; i++))
+        do
+        sleep $SLEEP_SHORT
+        $BREAK
+    done
+}
+
+daemon_run () {
+trap set_cycle USR1
+trap set_super USR2
+trap hide_status HUP
+
+while true
+    do
+    LEVEL=$(grep . $LEVEL_FILE)
+    if grep -q "^Charging" $STATUS_FILE
+        then # being charged
+        WAS_CHARGING=true
+        LINE_VOLT=$(awk '{print $1/1000000 "v"}' $LINE_VOLT_FILE)
+        BATT_VOLT=$(awk '{print $1/1000000 "v"}' $BATT_VOLT_FILE)
+        CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_R_FILE)
+        TEMP=$(awk '{print $1/10 "°C"}' $TEMP_FILE)
+        if $INIT
+            then # prepare for init
+            LEVEL_INIT=$LEVEL
+            TIME_INIT=$(date +%s)
+            INIT=false
+            SETTLED=false
+            CURR_UNLIMIT_TEXT="(calibrating)"
+            echo $ON > $CHARGE_FILE
+            logdate "Charging initialized" > $BCC_STATE
+        elif ! $SETTLED
+            then # calculate current for mode
+            sleep $SLEEP_SHORT
+            sleep $SLEEP_SHORT
+            CURR_UNLIMIT=$(sort -nr $CURR_UNLIMIT_FILE $CURR_W_FILE | head -1)
+            CURR_UNLIMIT_TEXT=$(echo $CURR_UNLIMIT | awk  '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
+            if [[ "$MODE" == "Cycle" ]]
+                then
+                CURRENT_LIMIT=$CURRENT_LIMIT_FACTOR
+            else
+                CURRENT_LIMIT=0
+            fi
+            SETTLED=true
+            logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_STATE
+        else
+            # adjust current
+            echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
+        fi
+        
+        if $SHOW_STATUS
+            then # show status notification
+            termux-notification --alert-once \
+            --ongoing -i bcc \
+            -t "${MODE}charging at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" \
+            -c "Battery is ${LEVEL}% charged to $BATT_VOLT and is at $TEMP" \
+            --button1 "${BUTTON1_TEXT}" \
+            --button1-action "${BUTTON1_ACTION}" \
+            --button2 "Hide Status" \
+            --button2-action "su  -c 'pkill -l HUP -f $0'"
+        fi
+        
+        if [[ $LEVEL -ge $LEVEL_MAX ]]
+            then # stop charging
+            echo $OFF > $CHARGE_FILE
+            IS_DISABLED=true
+            SHOW_WARNING=false
+            set_cycle
+        else
+            # connected, charging
+            sleep $SLEEP_SHORT
+        fi
+        
+    elif $WAS_CHARGING
+        then # charging just stopped
+        LEVEL_UP=$(($LEVEL-$LEVEL_INIT))
+        TIME=$(date +%s)
+        TIME_SPENT=$(($TIME-$TIME_INIT))
+        TIME_SPENT=$(date -ud "@$TIME_SPENT" +'%Hh:%Mm')
+        if [[ $LEVEL_MAX -ne 100 ]] && [[ $LEVEL -ge $LEVEL_MAX ]]
+            then
+            TEXT="Charging is limited to ${LEVEL_MAX}%"
+            BUTTON_TEXT="$BUTTON1_TEXT"
+            BUTTON_ACTION="$BUTTON1_ACTION"
+            logdate "Charging limited at $LEVEL%" >> $BCC_STATE
+        else
+            unset TEXT BUTTON_TEXT BUTTON_ACTION
+            logdate "Charging stopped at $LEVEL%" >> $BCC_STATE
+        fi
+        termux-notification -i bcc \
+            -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
+            -c "$TEXT" \
+            --button1 "${BUTTON_TEXT}" \
+            --button1-action "${BUTTON_ACTION}"
+        INIT=true
+        SHOW_STATUS=true
+        WAS_CHARGING=false
+        
+    elif [[ $LEVEL -lt $LEVEL_MIN ]] && $IS_DISABLED
+        then # re-enable charging
+        echo $ON > $CHARGE_FILE
+        IS_DISABLED=false
+        logdate "Charging re-enabled" >> $BCC_STATE
+        
+    elif [[ $LEVEL -ge $LEVEL_MAX ]] && ! $IS_DISABLED
+        then # disable charging
+        echo $OFF > $CHARGE_FILE
+        IS_DISABLED=true
+        SHOW_WARNING=false
+        set_cycle
+        logdate "Charging disabled" >> $BCC_STATE
+        
+    elif [[ $LEVEL -ge $LEVEL_MIN ]] && $IS_DISABLED
+        then # show warning
+        ONLINE=$(cat $ONLINE_FILE)
+        if [[ $ONLINE -gt 0 ]] && [[ $LEVEL -ne 100 ]] && $SHOW_WARNING
+            then # charger just connected
+            vibrate 2
+            TEXT="Charging is suspended above ${LEVEL_MIN}%"
+            termux-notification -i bcc \
+            -t "$TEXT" \
+            --button1 "${BUTTON1_TEXT}" \
+            --button1-action "${BUTTON1_ACTION}"
+            SHOW_WARNING=false
+            unset TEXT
+        elif [[ $ONLINE == 0 ]] && ! $SHOW_WARNING
+            then # charger just removed
+            SHOW_WARNING=true
+        else
+            # above minimum, not charging
+            logdate "Level $LEVEL% is above $LEVEL_MIN%. Disabled, Not charging" >> $BCC_STATE
+            while grep -qw $ONLINE $ONLINE_FILE
+                do sleep $SLEEP_SHORT
+            done
+        fi
+        
+    else
+        # not connected, not charging
+        logdate "Level $LEVEL% is below $LEVEL_MIN%. Not connected" >> $BCC_STATE
+        ONLINE=$(cat $ONLINE_FILE)
+        while grep -qw $ONLINE $ONLINE_FILE
+                do sleep $SLEEP_SHORT
+        done
+    fi
+done
+}
+
+daemon_start () {
+    echo -n "Starting Basic Charging Control "
+    if kill-process $0 $PID_FILE check-only
+        then
+        PID=$(cat $PID_FILE)
+        echo "(PID: $PID) $(SKIP)"
+    else
+        set_cycle
+        daemon_run &> /dev/null &
+        PID=$!
+        echo $PID > $PID_FILE
+        echo "(PID: $PID) $(DONE)"
+    fi
+}
+
+daemon_status () {
+    echo -n "Basic Charging Control is "
+    if kill-process $0 $PID_FILE check-only
+        then
+        PID=$(cat $PID_FILE)
+        echo "running (PID: $PID) $(OK)"
+    else
+        echo "not running $(FAIL)"
+    fi
+}
+
+daemon_stop () {
+    PID=$(cat $PID_FILE 2> /dev/null)
+    echo -n "Stopping Basic Charging Control "
+    if kill-process $0 $PID_FILE
+        then
+        echo $ON > $CHARGE_FILE
+        echo "(PID: $PID) $(DONE)"
+    else
+        SKIP
+    fi
+}
+
+# main ()
+
+case $1 in
+    start)
+        daemon_start
+        ;;
+    status)
+        daemon_status
+        ;;
+    restart)
+        daemon_stop
+        daemon_start
+        ;;
+    stop)
+        daemon_stop
+        ;;
+    *)
+        echo "Usage: start | status | restart | stop"
+        ;;
+esac
+

@@ -4,5 +4,5 @@ if [ -p /proc/self/fd/0 ]
         echo "$(date +"[%F %X %Z] -") $message"
 	done
 else
-	echo "$(date +'[%F %X %Z]') -$*"
+	echo "$(date +'[%F %X %Z]') - $*"
 fi

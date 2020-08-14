@@ -9,7 +9,7 @@ source set-dir
 source termux-env
 
 echo -ne "$HOSTNAME engine start:\t"
-date -r $LOG/post-boot.log 2> /dev/null || echo UNKNOWN
+date -r /storage 2> /dev/null || echo UNKNOWN
 
 echo -ne "Last run of post-boot:\t"
 date -r $LOG/post-boot.history 2> /dev/null || echo UNKNOWN
@@ -28,6 +28,9 @@ date -d "$(grep '# Date:' /etc/hosts | cut -d' ' -f3-7)" 2> /dev/null || echo UN
 
 echo -ne "crond service status:\t"
 pgrep crond &> /dev/null && echo "RUNNING (PID: $(pidof crond))" || echo STOPPED
+
+echo -ne "BCC service status:\t"
+pgrep -f basic-charging-control &> /dev/null && echo "RUNNING (PID: $(cat $RUN/bcc.pid))" || echo STOPPED
 
 echo -ne "Load average:\t\t"
 cat /proc/loadavg | cut -d' ' -f1-3

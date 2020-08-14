@@ -2,7 +2,7 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20200413
+## Version: 20200811
 
 source check-root
 remount-rw || exit 2
@@ -96,6 +96,10 @@ echo -ne "$(logdate) (Re)starting crond "
     /system/bin/crond -c $ETC/crontabs
     echo "(PID: $(pidof crond))  [DONE]"
     
+# Start basic-charging-control
+    echo -n "$(logdate) "
+    basic-charging-control start
+
 setenforce 1
 if [[ "$1" ]]
     then

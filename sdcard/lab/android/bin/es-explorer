@@ -2,29 +2,28 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 20200520
+## Version: 20200803
 
 source check-root
 source check-ping
 source set-dir
 source set-color
 
-URL="http://openbox.mobilem.360.cn/index/d/sid/3571"
-APK="/sdcard/Backups/apps/com.estrongs.android.pop.apk"
+ASSET_URL="http://estrongs.com/js/app.2424545d.js"
+APK_PATH="/sdcard/Backups/apps/com.estrongs.android.pop.apk"
 PKG_ID="com.estrongs.android.pop"
 PKG_NAME="ES Explorer"
-BYTES="$VAR/$PKG_ID.bytes"
+APK_URL="$VAR/$PKG_ID.url"
 
 
 check_update () {
-    echo -n "Checking for ${PKG_NAME} update "
-    OLD_BYTES=$(cat $BYTES)
-    NEW_BYTES=$(curl -sIL --connect-timeout 5 $URL | awk '/Content-Length:/ {print $2}')
-
-    if [[ $NEW_BYTES == $OLD_BYTES ]]
+    echo -n "$(logdate) Checking for ${PKG_NAME} update "
+    APK_URL_OLD=$(cat $APK_URL 2> /dev/null)
+    APK_URL_NEW=$(curl -sk --connect-timeout 5 -m 10 $ASSET_URL | grep -o "http.*\.apk")
+    if [[ "$APK_URL_NEW" == "$APK_URL_OLD" ]]
         then SKIP
         return 2
-    elif [[ -z $NEW_BYTES ]]
+    elif [[ -z $APK_URL_NEW ]]
         then FAIL
         return 1
     else
@@ -36,17 +35,18 @@ check_update () {
 
 download_update () {
     PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
-    echo "Current version: $PKG_VERSION"
-    echo "Downloading $PKG_NAME update..."
-    wget -t 0 -T 10 $URL -O $APK
-    echo -n "Updating ${PKG_NAME} "
+    echo "$(logdate) Current version: $PKG_VERSION"
+    echo "$(logdate) Downloading $PKG_NAME update..."
+    mv $APK_PATH ${APK_PATH}_${PKG_VERSION}
+    wget -t 0 -T 10 $APK_URL_NEW -O $APK_PATH
+    echo "$(logdate) Updating ${PKG_NAME} $(BEGIN)"
     setenforce 0
-    pm install -f $APK &> /dev/null
+    pm install -f $APK_PATH
     setenforce 1
-    DONE
-    echo $NEW_BYTES > $BYTES
+    echo "$(logdate) Updating ${PKG_NAME} $(DONE)"
+    echo $APK_URL_NEW > $APK_URL
     PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
-    echo "Updated version: $PKG_VERSION"
+    echo "$(logdate) Updated version: $PKG_VERSION"
 }
 
 case $1 in

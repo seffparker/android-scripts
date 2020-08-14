@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20200602
+## Version: 20200803
 
 source check-root
 source set-dir
@@ -10,10 +10,13 @@ source set-color
 
 DATE_LOG="$LOG/daily-jobs.history"
 OUTPUT_LOG="$LOG/daily-jobs.log"
-NET=NOT_CONNECTED
+PREV_PID="$RUN/daily-jobs_prev.pid"
+ONLINE=false
 JOB=1 # Index of first job
 N=6 # Total no. of jobs
 
+kill-process $0 $PREV_PID
+echo $$ > $PREV_PID
 cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
 exec &> >(tee "$OUTPUT_LOG")
 
@@ -31,28 +34,28 @@ echo "$(logdate) SHELL=$BASH $BASH_VERSION"
 notify 0 "Preparing..."
 
 uptime | logdate
-check-ping &> /dev/null && NET=CONNECTED
+check-ping &> /dev/null && ONLINE=true
 
-if [[ $BG && "$NET" == "NOT_CONNECTED" ]]
+if [[ $BG ]] && $ONLINE
     then
     notify 0 "Waiting 15 seconds for Internet..."
     echo "$(logdate) Waiting for Internet"
     vibrate 3
     sleep 15
-    check-ping && NET=CONNECTED | logdate
+    check-ping && ONLINE=true | logdate
     fi
 
-if [[ $NET == "CONNECTED" ]]
+if $ONLINE
     then
     notify $JOB "Checking adblock update..."
     adblock update -s
 fi
 ((JOB++))
 
-if [[ $NET == "CONNECTED" ]]
+if $ONLINE
     then
     notify $JOB "Checking ES Explorer update..."
-    es-explorer -c | logdate
+    es-explorer -c
 fi
 ((JOB++))
 
@@ -75,7 +78,7 @@ detach-from-playstore --auto
 # Finalize
 notify $JOB "Finishing up..."
 sed -i 1d $DATE_LOG
-echo "$(logdate) $NET" >> $DATE_LOG
+echo "$(logdate) ONLINE=$ONLINE" >> $DATE_LOG
 echo -e "$(logdate) daily-jobs $(DONE)"
 echo -en "$(logdate) Releasing wake-lock "
 termux-notification-remove dailyjobs

@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20200505
+## Version: 20200709
 
 
 source check-root
@@ -15,15 +15,15 @@ STATUS=$VAR/audio-sleep.left
 
 sleep_daemon () {
     termux-wake-lock
-    for MIN in $(seq $1 | sort -nr)
+    for ((MIN=$1; MIN > 0; MIN--))
     do
         echo -n ${MIN} > ${STATUS}
         termux-notification --alert-once --ongoing --id audio-sleep \
-        --content "Audio player will stop in $MIN minutes" \
-        --button1 "Abort" \
-        --button1-action "su -c '$0 0'" \
-        --button2 "Extend 30m" \
-        --button2-action "su -c '$0 +30'"\
+        -t "Audio player will stop in $MIN minutes" \
+        --button1 "Extend 30m" \
+        --button1-action "su -c '$0 +30'"\
+        --button2 "Abort" \
+        --button2-action "su -c '$0 0'" \
         &
         sleep 60
     done
@@ -31,7 +31,7 @@ sleep_daemon () {
     termux-notification --content "Audio player is being stopped" \
         --ongoing --id audio-sleep \
         --button1 "Extend 30m" \
-        --button1-action "su -c '$0 +30'"
+        --button1-action "su -c '$0 30'"
     CUR_VOL=$(termux-volume | awk '/music/ {getline; print $2+0}')
     for VOL in $(seq $CUR_VOL | sort -nr)
         do
@@ -39,62 +39,58 @@ sleep_daemon () {
         sleep 5
         done
     input keyevent 86 # stop media
-    termux-volume music $CUR_VOL
-    service call bluetooth_manager 8 &> /dev/null # diable bluetooth
+    termux-volume music $CUR_VOL # restore volume
+    service call bluetooth_manager 8 &> /dev/null # turn off bluetooth
     rm -f $PID_FILE $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock
+    pkill com.termux
 }
 
 print_usage () {
     echo "USAGE:"
     echo -e "\t`basename $0` <minutes-to-sleep>"
-    echo -e "\t`basename $0` +<minutes-to-extend>"
+    echo -e "\t`basename $0` +<minutes-to-sleep>"
     echo -e "\t`basename $0` 0 <zero-to-abort>"
     exit 1
 }
 
 sleep_stop () {
-    PID=$(cat $PID_FILE 2> /dev/null)
-    if pgrep -f $0 | grep -wq "^${PID}$"
+    echo -n "Aborting audio-sleep "
+    if kill-process $0 $PID_FILE check-only
     then
-        echo -ne "INFO: Canceling audio-sleep "
-        kill -9 $PID &> /dev/null
-        pkill -xf "sleep 60"
-        rm -f $PID_FILE $STATUS &> /dev/null
         termux-notification-remove audio-sleep
         termux-wake-unlock
+        kill-process $0 $PID_FILE
+        rm -f $STATUS
         DONE
     else
-        echo -e "NOTICE: No sleep job to turn off $(SKIP)"
+        SKIP
     fi
 }
 
-sleep_extend () {
-    MIN_LEFT=$(cat $STATUS 2> /dev/null)
-    let MIN=${MIN_LEFT}${1}
-    sleep_start $MIN
-}
-
 sleep_start () {
+    echo -ne "Setting sleep timer to $1 minutes "
     sleep_stop &> /dev/null
-    echo -ne "INFO: Setting sleep timer to $1 minutes "
-    sleep_daemon $1 &>/dev/null &
+    sleep_daemon $1 &> /dev/null &
     echo $! > $PID_FILE
     DONE
 }
 
 case $1 in
     0)
-       sleep_stop
-       ;;
-    [1-9]*)
-       sleep_start $1
-       ;;
+        sleep_stop
+        ;;
     +[1-9]*)
-       sleep_extend $1
-       ;;
+        MIN_LEFT=$(cat $STATUS 2> /dev/null)
+        let MIN=${MIN_LEFT}${1}
+        sleep_stop &> /dev/null
+        sleep_start $MIN
+        ;;
+    [1-9]*)
+        sleep_start $1
+        ;;
     *)
-       print_usage
-       ;;
+        print_usage
+        ;;
 esac
