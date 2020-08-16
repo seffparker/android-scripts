@@ -31,3 +31,5 @@ We can also define our user entries and excludes too.
 [2020-08-15 20:06:54 IST] - User entries: 72
 [2020-08-15 20:06:54 IST] - Updating Adblock  [ DONE ]
 ```
+## Preview
+![adblock](/doc/images/adblock.png)
