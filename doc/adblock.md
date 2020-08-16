@@ -1,6 +1,5 @@
 # adblock
-System hosts file based AdBlocker. 
-Based on StevenBlack's community hosts file.
+Based on [StevenBlack's community hosts](https://github.com/StevenBlack/hosts) file.
 We can also define our user entries and excludes too.
 
 ## Usage
