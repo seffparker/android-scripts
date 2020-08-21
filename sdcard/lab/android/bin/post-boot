@@ -2,17 +2,18 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20200811
+## Version: 20200821
 
 source check-root
 remount-rw || exit 2
 
 source set-dir
-export BG=true
-source /sdcard/lab/android/etc/bashrc.root
-source /sdcard/lab/android/etc/dns
+source $ETC/bashrc.root
+source $ETC/hostname
+source $ETC/dns
 
-HOSTNAME="batmobile"
+export BG=true
+
 DATE_LOG="${LOG}/post-boot.history"
 
 sed -i 1d $DATE_LOG
