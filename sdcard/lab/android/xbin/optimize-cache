@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Clean Android app caches from Internal storage
 ## Author: Seff P
@@ -19,7 +19,7 @@ if [[ $ENABLE == 1 ]]
     let CACHE_TOTAL=$CACHE_INT+CACHE_SDC
     let TARGET_DELETE_KB=$CACHE_TOTAL/"(100/$TARGET_DELETE_PERC)"
 
-    CUR_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
+    CUR_FREE=$(df -P | awk '$6=="/data" {print $4}')
     let TARGET_FREE=$CUR_FREE+$TARGET_DELETE_KB
 
     echo "$(logdate) Deleting caches of $TARGET_DELETE_KB KB ($TARGET_DELETE_PERC% of $CACHE_TOTAL)"
@@ -27,7 +27,7 @@ if [[ $ENABLE == 1 ]]
     setenforce 0
     /system/bin/pm trim-caches ${TARGET_FREE}K
     setenforce 1
-    NEW_FREE=$(/system/bin/busybox df -P | awk '$6=="/data" {print $4}')
+    NEW_FREE=$(df -P | awk '$6=="/data" {print $4}')
     echo "$(logdate) Storage free before: ${CUR_FREE} KB"
     echo "$(logdate) Storage free after:  ${NEW_FREE} KB"
 else

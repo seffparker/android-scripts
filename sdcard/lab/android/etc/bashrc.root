@@ -9,16 +9,17 @@
 
 if [[ ${EUID} == 0 ]] ; then
     export HOME=/data/root/
+    cd $HOME
 fi
 
 source set-dir
 
-export SHELL=/system/xbin/bash
+export SHELL=/data/bin/bash
 export USER=$(whoami)
 export TERM=xterm
 export TMPDIR=/data/local/tmp
 export LD_LIBRARY_PATH=/system/lib64:/data/data/com.termux/files/usr/lib
-export PATH=/sbin:/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets
+export PATH=/sbin:/data/bin:/data/xbin:/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets
 
 # Test for an interactive shell.  There is no need to set anything
 # past this point for scp and rcp, and it's important to refrain from
@@ -40,8 +41,7 @@ shopt -s histappend
 use_color=true
 
 alias ll='busybox ls -la --color'
-alias ps='busybox ps'
-alias su='/sbin/su -s /system/xbin/bash --login'
+alias su='/sbin/su -s /data/bin/bash --login'
 export HISTCONTROL=ignoreboth:erasedups
 
 # enable colorful terminal
@@ -55,3 +55,4 @@ fi
 unset use_color safe_term match_lhs
 
 # resize > /dev/null
+

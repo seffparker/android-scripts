@@ -2,7 +2,7 @@ source set-color
 
 HOST=8.8.8.8
 
-if ! ping -c 1 -s 0 -w 2 $HOST &> /dev/null
+if ! ping -c 1 -i 0.2 -s 0 -w 2 $HOST &> /dev/null
     then
     echo -e "${R}ERROR: No Internet!${W}"
     exit 1

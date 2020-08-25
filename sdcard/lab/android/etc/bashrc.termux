@@ -2,15 +2,15 @@
 
 shopt -s histappend
 
-source /system/xbin/set-dir
+source /data/xbin/set-dir
 
 export USER=$(whoami)
-export PATH="$PATH:/system/bin:/system/xbin"
+export PATH="$PATH:/data/bin:/data/xbin:/system/bin:/system/xbin"
 export HISTSIZE=4096
 export HISTCONTROL=ignoreboth:erasedups
 
 alias ll='ls -la'
-alias su='/sbin/su -s /system/xbin/bash --login'
+alias su='/sbin/su -s /data/bin/bash --login'
 
 echo
 report

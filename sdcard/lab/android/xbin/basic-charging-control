@@ -1,8 +1,8 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 20200814
+# Version: 20200823
 
 source check-root
 source set-dir
@@ -17,7 +17,7 @@ set_cycle () {
     BUTTON1_TEXT="Supercharge 🚀"
     BUTTON1_ACTION="su -c 'pkill -l USR2 -f $0'"
     SETTLED=false
-    BREAK=break
+    logdate "Set to Cyclecharge mode" >> $BCC_LOG
 }
 
 set_super () {
@@ -28,13 +28,13 @@ set_super () {
     BUTTON1_ACTION="su -c 'pkill -l USR1 -f $0'"
     IS_DISABLED=true
     SETTLED=false
-    BREAK=break
+    logdate "Set to Supercharge mode" >> $BCC_LOG
 }
 
 hide_status () {
     SHOW_STATUS=false
     termux-notification-remove bcc
-    BREAK=break
+    logdate "Notification hidden" >> $BCC_LOG
 }
 
 daemon_run () {
@@ -58,9 +58,10 @@ while true
             TIME_INIT=$(date +%s)
             INIT=false
             SETTLED=false
+            IS_DISABLED=false
             CURR_UNLIMIT_TEXT="(calibrating)"
             echo $ON > $CHARGE_FILE
-            logdate "Charging initialized" > $BCC_STATE
+            logdate "${MODE}charging initialized at $LEVEL%" > $BCC_LOG
         elif ! $SETTLED
             then # calculate current for mode
             sleep $SLEEP_SHORT
@@ -73,8 +74,11 @@ while true
             else
                 CURRENT_LIMIT=0
             fi
+            echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
+            sleep 1
+            CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_R_FILE)
             SETTLED=true
-            logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_STATE
+            logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_LOG
         else
             # adjust current
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
@@ -114,10 +118,10 @@ while true
             TEXT="Charging is limited to ${LEVEL_MAX}%"
             BUTTON_TEXT="$BUTTON1_TEXT"
             BUTTON_ACTION="$BUTTON1_ACTION"
-            logdate "Charging limited at $LEVEL%" >> $BCC_STATE
+            logdate "Charging limited at $LEVEL%" >> $BCC_LOG
         else
             unset TEXT BUTTON_TEXT BUTTON_ACTION
-            logdate "Charging stopped at $LEVEL%" >> $BCC_STATE
+            logdate "Charging stopped at $LEVEL%" >> $BCC_LOG
         fi
         termux-notification -i bcc \
             -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
@@ -132,7 +136,8 @@ while true
         then # re-enable charging
         echo $ON > $CHARGE_FILE
         IS_DISABLED=false
-        logdate "Charging re-enabled" >> $BCC_STATE
+        logdate "Charging re-enabled at $LEVEL%" >> $BCC_LOG
+        sleep 1
         
     elif [[ $LEVEL -ge $LEVEL_MAX ]] && ! $IS_DISABLED
         then # disable charging
@@ -140,7 +145,8 @@ while true
         IS_DISABLED=true
         SHOW_WARNING=false
         set_cycle
-        logdate "Charging disabled" >> $BCC_STATE
+        logdate "Charging disabled at $LEVEL%" >> $BCC_LOG
+        sleep 1
         
     elif [[ $LEVEL -ge $LEVEL_MIN ]] && $IS_DISABLED
         then # show warning
@@ -160,7 +166,7 @@ while true
             SHOW_WARNING=true
         else
             # above minimum, not charging
-            logdate "Level $LEVEL% is above $LEVEL_MIN%. Disabled, Not charging" >> $BCC_STATE
+            logdate "Level $LEVEL% is above $LEVEL_MIN%. Disabled, Not charging" >> $BCC_LOG
             while grep -qw $ONLINE $ONLINE_FILE
                 do sleep $SLEEP_SHORT
             done
@@ -168,7 +174,7 @@ while true
         
     else
         # not connected, not charging
-        logdate "Level $LEVEL% is below $LEVEL_MIN%. Not connected" >> $BCC_STATE
+        logdate "Level $LEVEL% is below $LEVEL_MIN%. Not connected" >> $BCC_LOG
         ONLINE=$(cat $ONLINE_FILE)
         while grep -qw $ONLINE $ONLINE_FILE
                 do sleep $SLEEP_SHORT

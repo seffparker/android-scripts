@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Short vibrate N times
 ## Author: Seff P

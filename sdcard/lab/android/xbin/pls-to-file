@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Copy songs from a playlist
 ## Author: Seff P

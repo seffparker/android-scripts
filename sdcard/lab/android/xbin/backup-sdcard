@@ -1,6 +1,6 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
-## Backup Internal storage to (external) storage
+## Sync Internal storage to SD card
 ## Author: Seff P
 ## Version: 20191207
 

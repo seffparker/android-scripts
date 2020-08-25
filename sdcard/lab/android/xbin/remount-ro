@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 source check-root
 

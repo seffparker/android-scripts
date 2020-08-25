@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Optimize system RAM
 ## Author: Seff P

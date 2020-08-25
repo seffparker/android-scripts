@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Detatch given apps from PlayStore
 ## Author: Seff P

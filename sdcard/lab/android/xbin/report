@@ -1,8 +1,8 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200801
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir

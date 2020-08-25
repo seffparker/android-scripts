@@ -1,8 +1,8 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20200803
+## Version: 20200824
 
 source check-root
 source set-dir
@@ -36,7 +36,7 @@ notify 0 "Preparing..."
 uptime | logdate
 check-ping &> /dev/null && ONLINE=true
 
-if [[ $BG ]] && $ONLINE
+if [[ $BG ]] && ! $ONLINE
     then
     notify 0 "Waiting 15 seconds for Internet..."
     echo "$(logdate) Waiting for Internet"

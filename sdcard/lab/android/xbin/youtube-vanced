@@ -1,0 +1,83 @@
+#!/data/bin/bash
+
+## Manage Vanced version of YouTube
+## Author: Seff P
+## Version: 20200825
+
+source check-root
+
+source set-color
+source set-dir
+
+PKG_ID="com.google.android.youtube"
+PKG_DATA_DIR="/data/data/com.google.android.youtube"
+PKG_APP_DIR="/data/root/app/YouTube"
+PKG_DATA_BACKUP="$VAR/youtube-vanced.settings.tar"
+PKG_USER=$(stat -c %U $PKG_DATA_DIR)
+
+DetachYoutube() {
+    detach-from-playstore $PKG_ID
+}
+
+RestoreYoutubeApp() {
+if ls -d /data/app/$PKG_ID-* &> /dev/null
+    then
+    echo -n "$(logdate) Uninstalling $PKG_DN updates "
+    setenforce 0
+    pm uninstall -k $PKG_ID
+    setenforce 1
+    tar -xf $PKG_DATA_BACKUP -C /
+    termux-run termux-notification --content "Uninstalled $PKG_DN updates"
+    DONE
+    RestoreYoutubeData
+fi
+}
+
+RestoreYoutubeData() {
+    echo -n "$(logdate) Restoring YouTube settings  "
+    tar -xf $PKG_DATA_BACKUP -C /
+    chown -hR $PKG_USER:$PKG_USER $PKG_DATA_DIR
+    DONE
+}
+
+BackupYoutubeData() {
+    echo -n "$(logdate) Backing up YouTube data  "
+    tar -cf $PKG_DATA_BACKUP $PKG_DATA_DIR/databases $PKG_DATA_DIR/shared_prefs
+    DONE
+}
+
+UpdateYoutube() {
+    echo -n "$(logdate) Updating YouTube... "
+    rm -rf $PKG_APP_DIR
+    mkdir -p $PKG_APP_DIR
+    cp -rf $MODS/YouTube/* $PKG_APP_DIR/
+    chcon -R u:object_r:system_file:s0 $PKG_APP_DIR
+    mount -o bind $PKG_APP_DIR /system/app/YouTube
+    DONE
+    echo -n "$(logdate) Setting permissions... "
+    find $PKG_APP_DIR -type f -exec chmod 644 {} \;
+    find $PKG_APP_DIR -type d -exec chmod 755 {} \;
+    DONE
+}
+
+case $1 in
+ -d|d*)
+    DetachYoutube
+    RestoreYoutubeApp
+    ;;
+ -u|u*)
+    DetachYoutube
+    UpdateYoutube
+    RestoreYoutubeApp
+    RestoreYoutubeData
+    ;;
+ -b|b*)
+    BackupYoutubeData
+    ;;
+ -r|r*)
+    RestoreYoutubeData
+    ;;
+ *)
+    echo "Usage: $(basename $0) [-d|detach | -u|update | -b|backup | -r|restore]"
+    ;;
+esac

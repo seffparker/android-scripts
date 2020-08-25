@@ -1,8 +1,8 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20200709
+## Version: 20200816
 
 
 source check-root
@@ -12,6 +12,7 @@ source /.bashrc
 
 PID_FILE=$RUN/audio-sleep.pid
 STATUS=$VAR/audio-sleep.left
+BT_OFF=8 # may vary with chipset
 
 sleep_daemon () {
     termux-wake-lock
@@ -40,7 +41,7 @@ sleep_daemon () {
         done
     input keyevent 86 # stop media
     termux-volume music $CUR_VOL # restore volume
-    service call bluetooth_manager 8 &> /dev/null # turn off bluetooth
+    service call bluetooth_manager $BT_OFF &> /dev/null # turn off bluetooth
     rm -f $PID_FILE $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock

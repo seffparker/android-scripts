@@ -1,0 +1,9 @@
+if [ -p /proc/self/fd/0 ]
+	then cat - | while read -r message
+	do echo "$(date +"[%F %X %Z] -") $message"
+	done
+elif [[ "$1" ]]
+	then echo "$(date +'[%F %X %Z]') - $*"
+else
+    echo -n "$(date +'[%F %X %Z]') -"
+fi

@@ -1,8 +1,8 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20200520
+## Version: 20200825
 
 source check-root
 
@@ -17,11 +17,9 @@ MODE=$2
 case "$1" in
  -e|e*)
     echo -n "$(logdate) Enabling Adblock "
-    if [ -f /etc/hosts_disabled ]
+    if ! mount | grep -q $SYS_HOSTS
     then
-        remount-rw
-        mv -f /etc/hosts_disabled /etc/hosts
-        remount-ro
+        mount -o bind $ETC/hosts.final $SYS_HOSTS
         DONE
     else
         SKIP
@@ -30,11 +28,9 @@ case "$1" in
   
  -d|d*)
     echo -n "$(logdate) Disabling Adblock "
-    if [ ! -f /etc/hosts_disabled ]
+    if mount | grep -q $SYS_HOSTS
     then
-        remount-rw
-        mv -f /etc/hosts /etc/hosts_disabled
-        remount-ro
+        umount $SYS_HOSTS
         DONE
     else
         SKIP
@@ -42,7 +38,7 @@ case "$1" in
     ;;
   
  -u|u*)
-    if [ ! -f /etc/hosts ]
+    if ! mount | grep -q $SYS_HOSTS
     then
         echo -e "$(logdate) Adblock is disabled. Update aborted!"
         exit 1
@@ -99,12 +95,8 @@ case "$1" in
     echo -en "$(logdate) Applying new update "
     if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
         then
-        remount-rw
         cp -f $ETC/hosts.comm $ETC/hosts.final
         cat $ETC/hosts.user >> $ETC/hosts.final
-        cp -f $ETC/hosts.final $SYS_HOSTS
-        chmod 644 $SYS_HOSTS
-        remount-ro
         DONE
     else
         SKIP

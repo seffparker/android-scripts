@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Sync user scripts to system path
 ## Author: Seff P
@@ -6,11 +6,9 @@
 
 # Preparation
 source check-root
-remount-rw || exit 2
 
 source set-dir
 source set-color
 
 echo -ne "Updating custom scripts "
-rsync -u --inplace $BIN/* /system/xbin/ --chmod=755 --chown=root:shell && DONE || FAIL
-remount-ro
+rsync -ru --inplace $XBIN/* /data/xbin/ --chmod=755 --chown=root:shell && DONE || FAIL

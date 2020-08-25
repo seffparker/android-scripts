@@ -1,4 +1,4 @@
-#!/system/xbin/bash
+#!/data/bin/bash
 
 ## Update App from given APK file URL
 ## Author: Seff P.
