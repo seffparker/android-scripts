@@ -7,6 +7,7 @@ These scripts are wrote to make my personal Android experience easier and produc
 - **Terminal:** Termux, Termux:API
 - **Shell:** [BASH 5](https://forum.xda-developers.com/android/software-hacking/aarch64-bash-5-andorid-api-28-t3938612)
 - **Root:** Magisk
+- **Features:** System-less
 
 ## Deployment
  1. Clone the repository
