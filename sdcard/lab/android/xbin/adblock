@@ -10,6 +10,7 @@ source set-dir
 source set-color
 
 SYS_HOSTS="/system/etc/hosts"
+USR_HOSTS="/data/root/hosts"
 CURL="/system/bin/curl"
 MODE=$2
 [ $MODE ] || MODE="-#"
@@ -17,9 +18,10 @@ MODE=$2
 case "$1" in
  -e|e*)
     echo -n "$(logdate) Enabling Adblock "
-    if ! mount | grep -q $SYS_HOSTS
+    if [[ -f ${USR_HOSTS}_disabled ]]
     then
-        mount -o bind $ETC/hosts.final $SYS_HOSTS
+        rm -f ${USR_HOSTS}_disabled
+        cat $ETC/hosts.final > $USR_HOSTS
         DONE
     else
         SKIP
@@ -28,9 +30,10 @@ case "$1" in
   
  -d|d*)
     echo -n "$(logdate) Disabling Adblock "
-    if mount | grep -q $SYS_HOSTS
+    if ! [[ -f ${USR_HOSTS}_disabled ]]
     then
-        umount $SYS_HOSTS
+        echo "127.0.0.1 localhost" > $USR_HOSTS
+        cp $USR_HOSTS ${USR_HOSTS}_disabled
         DONE
     else
         SKIP
@@ -38,7 +41,7 @@ case "$1" in
     ;;
   
  -u|u*)
-    if ! mount | grep -q $SYS_HOSTS
+    if [[ -f ${USR_HOSTS}_disabled ]]
     then
         echo -e "$(logdate) Adblock is disabled. Update aborted!"
         exit 1
@@ -97,6 +100,7 @@ case "$1" in
         then
         cp -f $ETC/hosts.comm $ETC/hosts.final
         cat $ETC/hosts.user >> $ETC/hosts.final
+        cat $ETC/hosts.final > $USR_HOSTS
         DONE
     else
         SKIP

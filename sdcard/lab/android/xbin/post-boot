@@ -74,6 +74,9 @@ else
     echo [DONE]
 fi
 
+echo $(logdate) Locking vault
+    vault 1
+
 echo -n "$(logdate) Setting hostname $HOSTNAME  "
 if [[ "$(hostname)" == "$HOSTNAME" ]]
     then echo "[SKIP]"
@@ -102,9 +105,6 @@ echo -ne "$(logdate) (Re)starting crond "
     pkill -9 crond &> /dev/null
     /data/bin/crond -c $ETC/crontabs
     echo "(PID: $(pidof crond))  [DONE]"
-   
-# Enabling Adblock
-    adblock -e
     
 # Start basic-charging-control
     echo -n "$(logdate) "

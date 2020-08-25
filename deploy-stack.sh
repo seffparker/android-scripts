@@ -14,9 +14,9 @@ fi
 TX_USER=$(stat -c %U /data/data/com.termux)
 
 echo "Installing latest busybox applets..."
-
-ln -s /data/adb/magisk/busybox /system/bin/busybox
-/system/bin/busybox --install -s /system/bin/
+mkdir /data/bin /data/xbin /data/root
+ln -s /data/adb/magisk/busybox /data/bin/busybox
+/data/bin/busybox --install -s /data/bin/
 
 echo "Installing user scripts and envs..."
 rm -f /data/data/com.termux/files/home/.bashrc
@@ -32,5 +32,5 @@ chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
 
 # Magisk post-boot script
 echo "Installing Magisk boot scripts..."
-cp -f ./data/adb/service.d/* /data/adb/service.d/
-chmod +x /data/adb/service.d/*
+cp -rf ./data/adb/* /data/adb/
+chmod +x /data/adb/service.d/* /data/adb/post-fs-data.d/*
