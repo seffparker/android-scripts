@@ -1,1 +1,0 @@
-mount -o bind /data/root/app/YouTube /system/app/YouTube

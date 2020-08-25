@@ -32,5 +32,5 @@ chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
 
 # Magisk post-boot script
 echo "Installing Magisk boot scripts..."
-cp -rf ./data/adb/* /data/adb/
-chmod +x /data/adb/service.d/* /data/adb/post-fs-data.d/*
+cp -f ./data/adb/service.d/* /data/adb/service.d/
+chmod +x /data/adb/service.d/*
