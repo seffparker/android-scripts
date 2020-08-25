@@ -1,1 +1,1 @@
-mount --bind /data/root/etc/hosts /system/etc/hosts
+mount --bind /data/root/hosts /system/etc/hosts
