@@ -74,9 +74,6 @@ else
     echo [DONE]
 fi
 
-echo $(logdate) Locking vault
-    vault 1
-
 echo -n "$(logdate) Setting hostname $HOSTNAME  "
 if [[ "$(hostname)" == "$HOSTNAME" ]]
     then echo "[SKIP]"
