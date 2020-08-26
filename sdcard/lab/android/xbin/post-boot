@@ -5,7 +5,7 @@
 ## Version: 20200821
 
 source check-root
-remount-rw || exit 2
+remount-rw > /dev/null || exit 2
 
 source set-dir
 source $ETC/bashrc.root
@@ -91,7 +91,7 @@ echo -n "$(logdate) Disabling loggings  "
     echo "[DONE]"
 
 echo $(logdate) Remounting as RO
-    remount-ro
+    remount-ro > /dev/null
 
 echo -n "$(logdate) DNS tweak via $CUSTOM_DNS  "
     if iptables -t nat -L | grep -q "${CUSTOM_DNS}:53"

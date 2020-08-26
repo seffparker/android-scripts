@@ -1,8 +1,10 @@
 #!/system/bin/sh
 
 {
+echo "$(/data/xbin/logdate) Waiting for boot completion" > /sdcard/lab/android/log/post-boot.log
     while [ "$(getprop sys.boot_completed)" != "1" ]
         do sleep 3
         done
-    /data/bin/bash /data/xbin/post-boot autorun &> /sdcard/lab/android/log/post-boot.log
+    export PATH=$PATH:/data/xbin
+    /data/bin/bash /data/xbin/post-boot autorun >> /sdcard/lab/android/log/post-boot.log
 } &

@@ -1,7 +1,11 @@
 #!/data/bin/bash
 
 source check-root
+source set-color
 
-/system/bin/mount -o remount,ro /vendor
-/system/bin/mount -o remount,ro /system
-/system/bin/mount -o remount,ro /
+echo -n "Mounting as RO "
+for FS in / /sbin/.magisk/mirror/system /sbin/.magisk/mirror/vendor
+    do
+    /system/bin/mount -o remount,ro $FS
+   done
+DONE

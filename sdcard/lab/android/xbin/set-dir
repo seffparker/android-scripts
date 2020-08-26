@@ -8,3 +8,7 @@ export VAR="/sdcard/lab/android/var"
 export BIN="/sdcard/lab/android/bin"
 export XBIN="/sdcard/lab/android/xbin"
 export TMP="/sdcard/lab/android/tmp"
+
+# Magisk Magic Mounts
+export SYSTEM="/sbin/.magisk/mirror/system"
+export VENDOR="/sbin/.magisk/mirror/vendor"
