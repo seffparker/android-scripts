@@ -1,7 +1,5 @@
 # The default hosts file used when
-#  the AdBlock is disabled
-# ADBLOCK_DISABLED
-# Do not remove the above line
+# the AdBlock is disabled
 
 127.0.0.1 localhost
 127.0.0.1 localhost.localdomain

@@ -2,7 +2,7 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20200821
+## Version: 20200826
 
 source check-root
 remount-rw > /dev/null || exit 2
@@ -109,6 +109,9 @@ echo -ne "$(logdate) (Re)starting crond "
 # Start basic-charging-control
     echo -n "$(logdate) "
     basic-charging-control start
+    
+# Enable AdBlock
+    adblock -e
 
 setenforce 1
 if [[ "$1" ]]

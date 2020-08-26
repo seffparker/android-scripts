@@ -17,7 +17,7 @@ MODE=$2
 case "$1" in
  -e|e*)
     echo -n "$(logdate) Enabling Adblock "
-    if grep -q ADBLOCK_DISABLED $SYS_HOSTS
+    if ! head -10 $SYS_HOSTS | grep -q StevenBlack
     then
         remount-rw > /dev/null
         cat $ETC/hosts.final > $SYS_HOSTS
@@ -30,7 +30,7 @@ case "$1" in
   
  -d|d*)
     echo -n "$(logdate) Disabling Adblock "
-    if ! grep -q ADBLOCK_DISABLED $SYS_HOSTS
+    if head -10 $SYS_HOSTS | grep -q StevenBlack
     then
         remount-rw > /dev/null
         cat $ETC/hosts.disabled > $SYS_HOSTS
@@ -42,7 +42,7 @@ case "$1" in
     ;;
   
  -u|u*)
-    if grep -q ADBLOCK_DISABLED $SYS_HOSTS
+    if ! head -10 $SYS_HOSTS | grep -q StevenBlack
     then
         echo -e "$(logdate) Adblock is disabled. Update aborted!"
         exit 1
