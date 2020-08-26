@@ -3,7 +3,7 @@
 # Shell script to deploy the whole stack
 # 
 # Author: Seff Parker
-# Version: 20200825
+# Version: 20200826
 
 if [ $(id -u) -ne 0 ]
     then
@@ -30,11 +30,7 @@ chmod 755 /data/xbin/* /data/bin/*
 chgrp shell /data/xbin/* /data/bin/*
 chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
 
-# System-less AdBlock
-touch /data/root/hosts /data/root/hosts_disabled
-chcon u:object_r:system_file:s0 /data/root/hosts
-
-# Magisk post-boot script
+# Magisk boot script
 echo "Installing Magisk boot scripts..."
 cp -rf ./data/adb/* /data/adb/
 chmod +x /data/adb/service.d/* /data/adb/post-fs-data.d/*
