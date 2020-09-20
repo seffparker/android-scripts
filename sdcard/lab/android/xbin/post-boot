@@ -4,22 +4,25 @@
 ## Author: Seff P
 ## Version: 20200826
 
+# Preparing
 source check-root
-remount-rw > /dev/null || exit 2
-
 source set-dir
 source $ETC/bashrc.root
 source $ETC/hostname
 source $ETC/dns
-
 export BG=true
 
+# Logs
 DATE_LOG="${LOG}/post-boot.history"
-
 sed -i 1d $DATE_LOG
 [ $1 ] && MODE="$1" || MODE="manual trigger"
 echo "$(logdate) $MODE" >> $DATE_LOG
 
+# Begin
+echo -n "$(logdate) Mounting / as RW "
+    /system/bin/mount -o remount,rw /
+    echo [DONE]
+    
 echo -n "$(logdate) SELinux mode (session): "
     setenforce 0
     getenforce
@@ -90,9 +93,6 @@ echo -n "$(logdate) Disabling loggings  "
     settings put global dropbox_max_files 0
     echo "[DONE]"
 
-echo $(logdate) Remounting as RO
-    remount-ro > /dev/null
-
 echo -n "$(logdate) DNS tweak via $CUSTOM_DNS  "
     if iptables -t nat -L | grep -q "${CUSTOM_DNS}:53"
         then echo "[SKIP]"
@@ -109,11 +109,13 @@ echo -ne "$(logdate) (Re)starting crond "
 # Start basic-charging-control
     echo -n "$(logdate) "
     basic-charging-control start
-    
-# Enable AdBlock
-    adblock -e
 
 setenforce 1
+
+echo -n "$(logdate) Mounting / as RO "
+    /system/bin/mount -o remount,ro /
+    echo [DONE]
+    
 if [[ "$1" ]]
     then
     termux-notification --content "Boot scripts are completed!" --id post-boot

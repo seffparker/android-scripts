@@ -2,13 +2,13 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 20200829
+# Version: 20200918
 
 source check-root
 source set-dir
 source $ETC/bcc.conf
 
-chmod u+w $CHARGE_FILE $CURR_LIMIT_FILE
+chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE $CURR_BOOST_FILE
 
 set_cycle () {
     MODE="Cycle"
@@ -46,49 +46,54 @@ trap hide_status HUP
 
 while true
     do
-    LEVEL=$(grep . $LEVEL_FILE)
-    if grep -Eq "^Charging|Not charging" $STATUS_FILE
+    LEVEL=$(cat $LEVEL_FILE)
+    if grep -Eq "^Charging|Not charging" $CHARGING_STATE
         then # being charged or paused
         LINE_VOLT=$(awk '{print $1/1000000 "v"}' $LINE_VOLT_FILE)
-        CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_R_FILE)
-        TEMP=$(awk '{print $1/10}' $TEMP_FILE)
-        
+        CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
+        TEMP=$(awk '{print $1/10}' $TEMP_METER)
+      
         if $INIT
             then # prepare for init
-            echo 0 > $CURR_UNLIMIT_FILE
             WAS_CHARGING=true
             LEVEL_INIT=$LEVEL
             TIME_INIT=$(date +%s)
             INIT=false
             SETTLED=false
-            CURR_UNLIMIT_TEXT="(calibrating)"
-            logdate "${MODE}charging initialized at $LEVEL%" >> $BCC_LOG
-            
-        elif ! $SETTLED
-            then # calculate max current
-            sleep $SLEEP_SHORT
-            sleep $SLEEP_SHORT
-            echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
-            sleep 1
-            CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_R_FILE)
-            # CURR_UNLIMIT=$(sort -nr $CURR_UNLIMIT_FILE $CURR_W_FILE | head -1)
-            # CURR_UNLIMIT_TEXT=$(echo $CURR_UNLIMIT | awk  '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
-            CURR_UNLIMIT_TEXT=$(awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}' $CURR_UNLIMIT_FILE)
-            logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_LOG
-            SETTLED=true
+            STATUS_TEXT="is initializing"
+            logdate "${MODE}charging initialized at $LEVEL% / ${TEMP}°C" >> $BCC_LOG
             
         elif $IS_PAUSED
             then # pause charging
             echo $PAUSE > $CURR_LIMIT_FILE
             if [[ $TEMP -le $RESUME_TEMP ]]
                 then # resume charging
-                logdate "Resuming at ${RESUME_TEMP}°C" >> $BCC_LOG
+                logdate "Charging resumed at ${RESUME_TEMP}°C" >> $BCC_LOG
                 IS_PAUSED=false
-                unset $PAUSED_TEXT
+            fi
+    
+        elif ! $SETTLED
+            then # calculate max current
+            if grep -wq "^${CURR_MAX}$" $CURR_MAX_FILE
+                then
+                echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
+                sleep $SLEEP_TINY
+                CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
+                CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
+                logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_LOG
+                STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
+                SETTLED=true
+                unset CURR_MAX
+            else
+                echo $MAX > $CURR_LIMIT_FILE
+                echo $BOOST > $CURR_BOOST_FILE
+                sleep $SLEEP_TINY
+                CURR_MAX=$(cat $CURR_MAX_FILE)
             fi
             
         else
             # adjust current
+            STATUS_TEXT="at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
         fi
         
@@ -97,8 +102,8 @@ while true
             BATT_VOLT=$(awk '{printf "%0.2f\n",$1/1000000}' $BATT_VOLT_FILE)
             termux-notification --alert-once \
             --ongoing -i bcc \
-            -t "${MODE}charging at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" \
-            -c "Battery is ${LEVEL}% charged to ${BATT_VOLT}v and is at ${TEMP}°C ${PAUSED_TEXT}" \
+            -t "${MODE}charging $STATUS_TEXT" \
+            -c "Battery is ${LEVEL}% charged to ${BATT_VOLT}v and is at ${TEMP}°C" \
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}" \
             --button2 "Hide Status" \
@@ -106,19 +111,18 @@ while true
         fi
         
         if [[ $TEMP -ge $PAUSE_TEMP ]] && ! $IS_PAUSED
-            then # pause charging
+            then # prepare to pause charging
             IS_PAUSED=true
-            logdate "Charging paused at $LEVEL% / ${TEMP}°C" >> $BCC_LOG
-            PAUSED_TEXT="(paused at ${PAUSE_TEMP}°C)"
-        fi
-        
+            logdate "Charging paused at ${TEMP}°C, resumes at ${RESUME_TEMP}°C. Level ${LEVEL}%" >> $BCC_LOG
+            STATUS_TEXT="paused at ${PAUSE_TEMP}°C, resumes at ${RESUME_TEMP}°C"
+        fi      
+       
         if [[ $LEVEL -ge $STOP_LEVEL ]]
             then # stop charging
-            echo $OFF > $CHARGE_FILE
+            echo $OFF > $INPUT_SWITCH
             IS_DISABLED=true
             SHOW_WARNING=false
-            set_cycle
-            sleep 1
+            sleep $SLEEP_TINY
         else
             # connected, charging
             sleep $SLEEP_SHORT
@@ -130,16 +134,17 @@ while true
         TIME=$(date +%s)
         TIME_SPENT=$(($TIME-$TIME_INIT))
         TIME_SPENT=$(date -ud "@$TIME_SPENT" +'%Hh:%Mm')
-        if [[ $STOP_LEVEL -ne 100 ]] && [[ $LEVEL -ge $STOP_LEVEL ]]
+        if $IS_DISABLED
             then
-            set_cycle
             TEXT="Charging is limited to ${STOP_LEVEL}%"
             BUTTON_TEXT="$BUTTON1_TEXT"
             BUTTON_ACTION="$BUTTON1_ACTION"
-            logdate "Charging limited at $LEVEL%" >> $BCC_LOG
+            logdate "Charging limited to $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
+            set_cycle
         else
-            unset TEXT BUTTON_TEXT BUTTON_ACTION
-            logdate "Charging stopped at $LEVEL% / ${TEMP}°C" >> $BCC_LOG
+            unset BUTTON_TEXT BUTTON_ACTION
+            TEXT="Charging interrupted at $LEVEL%"
+            logdate "Charging interrupted at $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
         fi
         termux-notification -i bcc \
             -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
@@ -149,27 +154,14 @@ while true
         INIT=true
         SHOW_STATUS=true
         WAS_CHARGING=false
+        IS_PAUSED=false
         
-    elif [[ $LEVEL -lt $RESUME_LEVEL ]] && $IS_DISABLED
-        then # re-enable charging
-        echo $ON > $CHARGE_FILE
-        IS_DISABLED=false
-        logdate "Charging re-enabled at $LEVEL%" >> $BCC_LOG
-        sleep 1
-        
-    elif [[ $LEVEL -ge $STOP_LEVEL ]] && ! $IS_DISABLED
-        then # disable charging
-        echo $OFF > $CHARGE_FILE
-        IS_DISABLED=true
-        SHOW_WARNING=false
-        logdate "Charging disabled at $LEVEL%" >> $BCC_LOG
-        sleep 1
-        
-    elif [[ $LEVEL -ge $RESUME_LEVEL ]] && $IS_DISABLED
-        then # show warning
-        ONLINE=$(cat $ONLINE_FILE)
-        if [[ $ONLINE -gt 0 ]] && [[ $LEVEL -ne 100 ]] && $SHOW_WARNING
-            then # charger just connected
+    elif $IS_DISABLED
+        then # above resume level. Disabled, not charging
+        logdate "Level $LEVEL% is above $RESUME_LEVEL%. Disabled, Not charging" >> $BCC_LOG
+        STATE=$(cat $INPUT_STATE)
+        if [[ $STATE -eq $ONLINE ]] && [[ $LEVEL -ne 100 ]] && $SHOW_WARNING
+            then # charger just connected, show warning
             vibrate 2
             TEXT="Charging is suspended above ${RESUME_LEVEL}%"
             termux-notification -i bcc \
@@ -178,22 +170,28 @@ while true
             --button1-action "${BUTTON1_ACTION}"
             SHOW_WARNING=false
             unset TEXT
-        elif [[ $ONLINE == 0 ]] && ! $SHOW_WARNING
+        elif [[ $STATE -eq $OFFLINE ]] && ! $SHOW_WARNING
             then # charger just removed
             SHOW_WARNING=true
-        else
-            # above minimum, not charging
-            logdate "Level $LEVEL% is above $RESUME_LEVEL%. Disabled, Not charging" >> $BCC_LOG
-            while grep -qw $ONLINE $ONLINE_FILE
-                do sleep $SLEEP_SHORT
-            done
+        fi
+        
+        while grep -qw $STATE $INPUT_STATE && [[ $LEVEL -ge $RESUME_LEVEL ]]
+            do sleep $SLEEP_SHORT
+            LEVEL=$(cat $LEVEL_FILE)
+        done
+        
+        if [[ $LEVEL -lt $RESUME_LEVEL ]]
+            then # re-enable charging
+            echo $ON > $INPUT_SWITCH
+            IS_DISABLED=false
+            logdate "Charging re-enabled at $LEVEL%" >> $BCC_LOG
+            sleep $SLEEP_TINY
         fi
         
     else
         # not connected, not charging
         logdate "Level is $LEVEL%. Not connected" >> $BCC_LOG
-        ONLINE=$(cat $ONLINE_FILE)
-        while grep -qw $ONLINE $ONLINE_FILE
+        while grep -qw $OFFLINE $INPUT_STATE
                 do sleep $SLEEP_SHORT
         done
     fi
@@ -208,7 +206,7 @@ daemon_start () {
         echo "(PID: $PID) $(SKIP)"
     else
         logdate "Starting Basic Charging Control" > $BCC_LOG
-        echo $ON > $CHARGE_FILE
+        echo $ON > $INPUT_SWITCH
         set_cycle
         daemon_run &> /dev/null &
         PID=$!
@@ -233,7 +231,7 @@ daemon_stop () {
     echo -n "Stopping Basic Charging Control "
     if kill-process $0 $PID_FILE
         then
-        echo $ON > $CHARGE_FILE
+        echo $ON > $INPUT_SWITCH
         echo "(PID: $PID) $(DONE)"
     else
         SKIP

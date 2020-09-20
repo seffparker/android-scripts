@@ -2,13 +2,20 @@
 
 ## Sync user scripts to system path
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200910
 
 # Preparation
 source check-root
-
 source set-dir
 source set-color
 
 echo -ne "Updating custom scripts "
-rsync -ru --inplace $XBIN/* /data/xbin/ --chmod=755 --chown=root:shell && DONE || FAIL
+FLIST=$(rsync -ui --inplace $XBIN/* /data/xbin/ --chmod=755 --chown=root:shell)
+
+if [[ $? -ne 0 ]]
+    then FAIL
+elif [[ $FLIST ]]; then
+    DONE
+else
+    SKIP
+fi

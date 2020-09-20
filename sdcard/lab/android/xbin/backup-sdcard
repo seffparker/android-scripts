@@ -2,7 +2,7 @@
 
 ## Sync Internal storage to SD card
 ## Author: Seff P
-## Version: 20191207
+## Version: 20200919
 
 source check-root
 
@@ -38,7 +38,7 @@ case $1 in
  -s|s*)
     CheckBackupDrive
     echo -e "${Y}Scanning files to be deleted...${W}\n"
-    $RSYNC $OPTIONS -n $SRC $DEST | awk '/^deleting / { $1=""; print $0; system ("") }' | grep --line-buffered -vE 'WhatsApp|.estrongs'
+    $RSYNC $OPTIONS -n $SRC $DEST | awk '/^deleting / { $1=""; print $0; system ("") }' | /system/bin/grep --line-buffered -vE 'WhatsApp|.estrongs'
     DONE
     echo -n "Last rsync date: "
     cat $VAR/backup-sdcard.last_run

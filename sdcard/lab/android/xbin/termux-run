@@ -2,9 +2,9 @@
 
 ## Load Termux environments
 ## Author: Seff P
-## Version: 20191129
+## Version: 20200912
 
-source /system/xbin/termux-env
+source /data/xbin/termux-env
 
 pkill -9 -f files/usr/.*/termux-
 

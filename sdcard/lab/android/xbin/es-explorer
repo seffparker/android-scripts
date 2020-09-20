@@ -16,10 +16,10 @@ PKG_NAME="ES Explorer"
 APK_URL="$VAR/$PKG_ID.url"
 
 
-check_update () {
-    echo -n "$(logdate) Checking for ${PKG_NAME} update "
+checkUpdate () {
+    echo -n "$(logdate) Notify ${PKG_NAME} update "
     APK_URL_OLD=$(cat $APK_URL 2> /dev/null)
-    APK_URL_NEW=$(curl -sk --connect-timeout 5 -m 10 $ASSET_URL | grep -o "http.*\.apk")
+    APK_URL_NEW=$(curl -sk --connect-timeout 2 --retry 5 -m 10 $ASSET_URL | grep -o "http.*\.apk")
     if [[ "$APK_URL_NEW" == "$APK_URL_OLD" ]]
         then SKIP
         return 2
@@ -27,13 +27,13 @@ check_update () {
         then FAIL
         return 1
     else
-        DONE
         termux-notification --title "${PKG_NAME} update available" --id apk-update
+        DONE
         return 0
     fi
 }
 
-download_update () {
+installUpdate () {
     PKG_VERSION=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
     echo "$(logdate) Current version: $PKG_VERSION"
     echo "$(logdate) Downloading $PKG_NAME update..."
@@ -51,10 +51,10 @@ download_update () {
 
 case $1 in
     -c | c* )
-        check_update
+        checkUpdate
         ;;
     -u | u* )
-        check_update && download_update
+        checkUpdate && installUpdate
         ;;
     *)
         echo "Usage: -c|check | -u|update"

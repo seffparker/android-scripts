@@ -2,14 +2,14 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20200826
+## Version: 20200910
 
 source check-root
 
 source set-dir
 source set-color
 
-SYS_HOSTS="$SYSTEM/etc/hosts"
+SYS_HOSTS="$BINDS/hosts"
 CURL="/system/bin/curl"
 MODE=$2
 [ $MODE ] || MODE="-#"
@@ -19,10 +19,8 @@ case "$1" in
     echo -n "$(logdate) Enabling Adblock "
     if ! head -10 $SYS_HOSTS | grep -q StevenBlack
     then
-        remount-rw > /dev/null
         cat $ETC/hosts.final > $SYS_HOSTS
         DONE
-        remount-ro > /dev/null
     else
         SKIP
     fi
@@ -32,9 +30,7 @@ case "$1" in
     echo -n "$(logdate) Disabling Adblock "
     if head -10 $SYS_HOSTS | grep -q StevenBlack
     then
-        remount-rw > /dev/null
         cat $ETC/hosts.disabled > $SYS_HOSTS
-        remount-ro > /dev/null
         DONE
     else
         SKIP
@@ -96,25 +92,23 @@ case "$1" in
     else
         SKIP
     fi
-    echo -en "$(logdate) Applying new update "
-    if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
-        then
-        cp -f $ETC/hosts.comm $ETC/hosts.final
-        cat $ETC/hosts.user >> $ETC/hosts.final
-        remount-rw > /dev/null
-        cat $ETC/hosts.final > $SYS_HOSTS
-        remount-ro > /dev/null
-        DONE
-    else
-        SKIP
-    fi
-    
     echo -e "$(logdate) Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
     echo -e "$(logdate) Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
     
     USER_REC=$(grep -c ^0 $ETC/hosts.user)
     echo -e "$(logdate) User entries: $USER_REC"
-    echo -e "$(logdate) Updating Adblock $(DONE)"
+    
+    echo -en "$(logdate) Applying new update "
+    if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
+        then
+        cp -f $ETC/hosts.comm $ETC/hosts.final
+        cat $ETC/hosts.user >> $ETC/hosts.final
+        cat $ETC/hosts.final > $SYS_HOSTS
+        DONE
+    else
+        SKIP
+    fi
+    
     ;;
  *)
     echo "Usage: $(basename $0) [-u|update | -e|enable -d|disable]"

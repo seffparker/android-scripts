@@ -51,7 +51,7 @@ sleep_daemon () {
 print_usage () {
     echo "USAGE:"
     echo -e "\t`basename $0` <minutes-to-sleep>"
-    echo -e "\t`basename $0` +<minutes-to-sleep>"
+    echo -e "\t`basename $0` +<minutes-to-extend>"
     echo -e "\t`basename $0` 0 <zero-to-abort>"
     exit 1
 }
@@ -72,7 +72,6 @@ sleep_stop () {
 
 sleep_start () {
     echo -ne "Setting sleep timer to $1 minutes "
-    sleep_stop &> /dev/null
     sleep_daemon $1 &> /dev/null &
     echo $! > $PID_FILE
     DONE
@@ -89,6 +88,7 @@ case $1 in
         sleep_start $MIN
         ;;
     [1-9]*)
+        sleep_stop &> /dev/null
         sleep_start $1
         ;;
     *)

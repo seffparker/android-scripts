@@ -72,7 +72,7 @@ echo "$(logdate) $(optimize-db report)"
 ((JOB++))
 
 notify $JOB "Detaching apps from PlayStore..."
-detach-from-playstore --auto
+detach-from-playstore --pre-def
 ((JOB++))
 
 # Finalize
