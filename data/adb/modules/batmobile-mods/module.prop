@@ -1,0 +1,7 @@
+id=batmobile-mods
+name=Batmobile Mods
+version=1.0
+versionCode=1
+author=Seff Parker
+description=Apply various mods for Batmobile
+minMagisk=17000
