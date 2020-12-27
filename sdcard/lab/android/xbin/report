@@ -2,7 +2,7 @@
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20200911
+## Version: 20201106
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir
@@ -18,7 +18,7 @@ echo -ne "Last run of daily-jobs:\t"
 date -r $LOG/daily-jobs.history 2> /dev/null || echo UNKNOWN
 
 echo -ne "APT update date:\t"
-cat $VAR/pkg-update.last_run 2> /dev/null || echo UNKNOWN
+date -r /data/data/com.termux/files/usr/var/log/apt/history.log 2> /dev/null || echo UNKNOWN
 
 echo -ne "Adblock database date:\t"
 date -d "$(grep '# Date:' /etc/hosts | cut -d' ' -f3-7)" 2> /dev/null || echo UNKNOWN

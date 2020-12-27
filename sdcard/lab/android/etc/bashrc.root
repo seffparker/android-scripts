@@ -1,15 +1,10 @@
 # /.bashrc
 #
-# This file is sourced by all *interactive* bash shells on startup,
-# including some apparently interactive shells such as scp and rcp
-# that can't tolerate any output.  So make sure this doesn't display
-# anything or bad things will happen !
-
-# exit if not root
+# Tweaked for batmobile
 
 if [[ ${EUID} == 0 ]] ; then
     export HOME=/data/root/
-    cd $HOME
+    HISTFILE=/storage/emulated/0/lab/android/var/bash_history.root
 fi
 
 source set-dir
@@ -19,40 +14,38 @@ export USER=$(whoami)
 export TERM=xterm
 export TMPDIR=/data/local/tmp
 export LD_LIBRARY_PATH=/system/lib64:/data/data/com.termux/files/usr/lib
+export PREFIX=/data/data/com.termux/files/usr
+export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
 export PATH=/sbin:/data/bin:/data/xbin:/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets
 
-# Test for an interactive shell.  There is no need to set anything
-# past this point for scp and rcp, and it's important to refrain from
-# outputting anything in those cases.
+# Continue if shell is interactive
 if [[ $- != *i* ]] ; then
 	# Shell is non-interactive.  Be done now!
 	return
 fi
 
-# Bash won't get SIGWINCH if another process is in the foreground.
-# Enable checkwinsize so that bash will check the terminal size when
-# it regains control.  #65623
-# http://cnswww.cns.cwru.edu/~chet/bash/FAQ (E11)
+# Issue #65623
 shopt -s checkwinsize
 
-# Enable history appending instead of overwriting.  #139609
+# History
 shopt -s histappend
-
-use_color=true
-
-alias ll='busybox ls -la --color'
-alias su='/sbin/su -s /data/bin/bash --login'
+export HISTSIZE=4096
 export HISTCONTROL=ignoreboth:erasedups
+export HISTTIMEFORMAT="%Y-%m-%d %T "
+
+# Aliases
+alias ll='busybox ls -la --color'
+alias su='/sbin/su -s /data/bin/bash'
 
 # enable colorful terminal
+use_color=true
 if [[ ${EUID} == 0 ]] ; then
 	PS1='\[\033[01;31m\]${USER:=$USER}@${HOSTNAME:=$HOSTMAME}\[\033[01;32m\] \W \$\[\033[00m\] '
 else
 	PS1='\[\033[01;32m\]${USER:=$USER}@${HOSTNAME:=$HOSTMAME}\[\033[01;34m\] \w \$\[\033[00m\] '
 fi
 
-# Try to keep environment pollution down, EPA loves us.
-unset use_color safe_term match_lhs
+# misc
+cd $HOME
 
-# resize > /dev/null
-
+# end of bashrc

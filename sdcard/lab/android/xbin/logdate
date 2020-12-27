@@ -1,9 +1,12 @@
 if [ -p /proc/self/fd/0 ]
+    # input is pipe
 	then cat - | while read -r message
 	do echo "$(date +"[%F %X %Z] -") $message"
 	done
 elif [[ "$1" ]]
+    # input is arg
 	then echo "$(date +'[%F %X %Z]') - $*"
 else
+    # no input or args
     echo -n "$(date +'[%F %X %Z]') -"
 fi

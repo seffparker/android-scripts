@@ -7,7 +7,7 @@
 source check-root
 
 source set-dir
-source set-color
+source set-prompt
 
 RSYNC='/data/data/com.termux/files/usr/bin/rsync'
 OPTIONS="-truv --blocking-io -@ 5 --force --delete --stats --exclude-from=$ETC/backup-sdcard.excludes --delete-excluded"

@@ -2,85 +2,99 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20200824
+## Version: 20201125
 
 source check-root
 source set-dir
-source set-color
+source set-prompt
 
 DATE_LOG="$LOG/daily-jobs.history"
 OUTPUT_LOG="$LOG/daily-jobs.log"
-PREV_PID="$RUN/daily-jobs_prev.pid"
+PREV_PID_FILE="$RUN/daily-jobs.pid-previous"
 ONLINE=false
 JOB=1 # Index of first job
 N=6 # Total no. of jobs
 
-kill-process $0 $PREV_PID
-echo $$ > $PREV_PID
-cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
-exec &> >(tee "$OUTPUT_LOG")
-
+# functions
 notify () {
     termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
-    }
+}
 
-vibrate 1
-sleep 1
-echo -e "$(logdate) daily-jobs $(BEGIN)"
-echo -en "$(logdate) Holding wake-lock "
-termux-wake-lock; DONE
-echo "$(logdate) SHELL=$BASH $BASH_VERSION"
+prepare () {
+    PREV_PID=$(cat $PREV_PID_FILE &> /dev/null)
+    busybox pkill -9 -P $PREV_PID &> /dev/null
+    busybox pkill -9 $PREV_PID &> /dev/null
+    echo $$ > $PREV_PID_FILE
+    cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
+    exec &> >(logdate | tee "$OUTPUT_LOG")
+}
 
-notify 0 "Preparing..."
-
-uptime | logdate
-check-ping &> /dev/null && ONLINE=true
-
-if [[ $BG ]] && ! $ONLINE
-    then
-    notify 0 "Waiting 15 seconds for Internet..."
-    echo "$(logdate) Waiting for Internet"
-    vibrate 3
-    sleep 15
-    check-ping && ONLINE=true | logdate
+run_jobs () {
+    vibrate 1
+    sleep 1
+    echo -e "daily-jobs $(BEGIN)"
+    echo -en "Holding wake-lock "
+    termux-wake-lock; DONE
+    echo "SHELL=$BASH $BASH_VERSION"
+    
+    notify 0 "Preparing..."
+    
+    uptime
+    check-ping &> /dev/null && ONLINE=true
+    
+    if [[ $BG ]] && ! $ONLINE
+        then
+        notify 0 "Waiting 15 seconds for Internet..."
+        echo "Waiting for Internet"
+        vibrate 3
+        sleep 15
+        check-ping && ONLINE=true | logdate
+        fi
+    
+    if $ONLINE
+        then
+        notify $JOB "Checking adblock update..."
+        adblock update
     fi
+    ((JOB++))
+    
+    if $ONLINE
+        then
+        notify $JOB "Checking ES Explorer update..."
+        es-explorer -u
+    fi
+    ((JOB++))
+    
+    notify $JOB "Optimizing memory & cache..."
+    optimize-cache
+    optimize-memory
+    ((JOB++))
+    
+    
+    notify $JOB "Generating maintenance report..."
+    echo "$(pkg-update report)"
+    echo "$(backup-sdcard report)"
+    echo "$(optimize-db report)"
+    ((JOB++))
+    
+    notify $JOB "Detaching apps from PlayStore..."
+    detach-from-playstore --pre-def
+    ((JOB++))
+}
 
-if $ONLINE
-    then
-    notify $JOB "Checking adblock update..."
-    adblock update -s
-fi
-((JOB++))
+finish () {
+    notify $JOB "Finishing up..."
+    sed -i 1d $DATE_LOG
+    echo "$(logdate) ONLINE=$ONLINE" >> $DATE_LOG
+    echo -e "daily-jobs $(DONE)"
+    echo -en "Releasing wake-lock "
+    termux-notification-remove dailyjobs
+    termux-wake-unlock
+    DONE
+}
 
-if $ONLINE
-    then
-    notify $JOB "Checking ES Explorer update..."
-    es-explorer -c
-fi
-((JOB++))
-
-notify $JOB "Optimizing memory & cache..."
-optimize-cache
-optimize-memory
-((JOB++))
-
-
-notify $JOB "Generating maintenance report..."
-echo "$(logdate) $(pkg-update report)"
-echo "$(logdate) $(backup-sdcard report)"
-echo "$(logdate) $(optimize-db report)"
-((JOB++))
-
-notify $JOB "Detaching apps from PlayStore..."
-detach-from-playstore --pre-def
-((JOB++))
-
-# Finalize
-notify $JOB "Finishing up..."
-sed -i 1d $DATE_LOG
-echo "$(logdate) ONLINE=$ONLINE" >> $DATE_LOG
-echo -e "$(logdate) daily-jobs $(DONE)"
-echo -en "$(logdate) Releasing wake-lock "
-termux-notification-remove dailyjobs
-termux-wake-unlock
-DONE
+# main
+prepare
+run_jobs
+finish
+sleep 0.1

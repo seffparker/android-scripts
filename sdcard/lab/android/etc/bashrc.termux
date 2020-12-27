@@ -1,19 +1,20 @@
 # bashrc for Termux
 
-shopt -s histappend
 
+# Environments
 source /data/xbin/set-dir
-
 export USER=$(whoami)
 export PATH="$PATH:/data/bin:/data/xbin:/system/bin:/system/xbin"
+
+# History
+shopt -s histappend
 export HISTSIZE=4096
 export HISTCONTROL=ignoreboth:erasedups
+export HISTTIMEFORMAT="%Y-%m-%d %T "
 
+# Alias
 alias ll='ls -la'
-alias su='/sbin/su -s /data/bin/bash --login'
-
-echo
-report
+alias su='/sbin/su -s /data/bin/bash'
 
 # enable colorful terminal
 if [[ ${EUID} == 0 ]] ; then

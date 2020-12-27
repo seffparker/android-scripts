@@ -2,19 +2,18 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20200816
+## Version: 20201206
 
 
 source check-root
+source /sdcard/lab/android/etc/bashrc.root
 source set-dir
-source set-color
-source /.bashrc
+source set-prompt
 
 PID_FILE=$RUN/audio-sleep.pid
 STATUS=$VAR/audio-sleep.left
-BT_OFF=8 # may vary with chipset
 
-sleep_daemon () {
+daemon_run () {
     termux-wake-lock
     for ((MIN=$1; MIN > 0; MIN--))
     do
@@ -24,8 +23,7 @@ sleep_daemon () {
         --button1 "Extend 30m" \
         --button1-action "su -c '$0 +30'"\
         --button2 "Abort" \
-        --button2-action "su -c '$0 0'" \
-        &
+        --button2-action "su -c '$0 0'" 
         sleep 60
     done
     echo -n 0 > ${STATUS}
@@ -41,11 +39,10 @@ sleep_daemon () {
         done
     input keyevent 86 # stop media
     termux-volume music $CUR_VOL # restore volume
-    service call bluetooth_manager $BT_OFF &> /dev/null # turn off bluetooth
+    /system/bin/svc bluetooth disable
     rm -f $PID_FILE $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock
-    pkill com.termux
 }
 
 print_usage () {
@@ -56,40 +53,44 @@ print_usage () {
     exit 1
 }
 
-sleep_stop () {
+daemon_stop () {
     echo -n "Aborting audio-sleep "
-    if kill-process $0 $PID_FILE check-only
+    if start-stop-daemon -Ktq -p $PID_FILE
     then
-        termux-notification-remove audio-sleep
+        PID=$(cat $PID_FILE)
+        busybox pkill -9 -P $PID &> /dev/null
+        start-stop-daemon -Kq -p $PID_FILE
         termux-wake-unlock
-        kill-process $0 $PID_FILE
-        rm -f $STATUS
+        termux-notification-remove audio-sleep
+        rm -f $STATUS $PID_FILE
         DONE
     else
         SKIP
     fi
 }
 
-sleep_start () {
+daemon_start () {
     echo -ne "Setting sleep timer to $1 minutes "
-    sleep_daemon $1 &> /dev/null &
-    echo $! > $PID_FILE
+    start-stop-daemon -S -m -p $PID_FILE -b $0 -- run $1
     DONE
 }
 
 case $1 in
+    run)
+        [[ $2 -gt 1 ]] && daemon_run $2 || print_usage
+        ;;
     0)
-        sleep_stop
+        daemon_stop
         ;;
     +[1-9]*)
         MIN_LEFT=$(cat $STATUS 2> /dev/null)
         let MIN=${MIN_LEFT}${1}
-        sleep_stop &> /dev/null
-        sleep_start $MIN
+        daemon_stop &> /dev/null
+        daemon_start $MIN
         ;;
     [1-9]*)
-        sleep_stop &> /dev/null
-        sleep_start $1
+        daemon_stop &> /dev/null
+        daemon_start $1
         ;;
     *)
         print_usage

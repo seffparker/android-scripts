@@ -2,7 +2,7 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20200826
+## Version: 20201002
 
 # Preparing
 source check-root
@@ -19,18 +19,14 @@ sed -i 1d $DATE_LOG
 echo "$(logdate) $MODE" >> $DATE_LOG
 
 # Begin
-echo -n "$(logdate) Mounting / as RW "
-    /system/bin/mount -o remount,rw /
-    echo [DONE]
-    
-echo -n "$(logdate) SELinux mode (session): "
+echo SHELL=$SHELL
+
+echo -n "SELinux mode (session): "
     setenforce 0
     getenforce
-    
-echo $(logdate) SHELL=$SHELL
 
 # Fast entropy
-echo -ne "$(logdate) Optimizing entropy  "
+echo -ne "Optimizing entropy  "
 if [[ -e /dev/random_default ]]
     then
     echo [SKIP]
@@ -43,44 +39,17 @@ else
 fi
 
 # I/O scheduler
-echo -ne "$(logdate) I/O scheduler tweak  "
+echo -ne "I/O scheduler tweak  "
 for DEVICE in /sys/block/sd*/queue /sys/block/dm-0/queue
     do echo noop > $DEVICE/scheduler
     echo 64 > $DEVICE/read_ahead_kb
     done
 echo [DONE]
 
-echo -n "$(logdate) Symlinking bashrc  "
-if [[ -L /.bashrc ]]
-    then
-    echo [SKIP]
-else
-    ln -fs $ETC/bashrc.root /.bashrc
-    echo [DONE]
-fi
-
-echo -n "$(logdate) Symlinking bash_history  "
-if [[ -L /.bash_history ]]
-    then
-    echo [SKIP]
-else
-    ln -fs $VAR/bash_history.root /.bash_history
-    echo [DONE]
-fi
-
-echo -n "$(logdate) Symlinking bash_profile  "
-if [[ -L /.bash_profile ]]
-    then
-    echo [SKIP]
-else
-    ln -fs $ETC/bashrc.root /.bash_profile
-    echo [DONE]
-fi
-
-echo $(logdate) Locking vault
+echo "Locking vault"
     vault 1
 
-echo -n "$(logdate) Setting hostname $HOSTNAME  "
+echo -n "Setting hostname $HOSTNAME  "
 if [[ "$(hostname)" == "$HOSTNAME" ]]
     then echo "[SKIP]"
 else
@@ -88,12 +57,12 @@ else
     echo "[DONE]"
 fi
 
-echo -n "$(logdate) Disabling loggings  "
+echo -n "Disabling loggings  "
     stop logd
     settings put global dropbox_max_files 0
     echo "[DONE]"
 
-echo -n "$(logdate) DNS tweak via $CUSTOM_DNS  "
+echo -n "DNS tweak via $CUSTOM_DNS  "
     if iptables -t nat -L | grep -q "${CUSTOM_DNS}:53"
         then echo "[SKIP]"
     else
@@ -101,21 +70,16 @@ echo -n "$(logdate) DNS tweak via $CUSTOM_DNS  "
         echo "[DONE]"
     fi
 
-echo -ne "$(logdate) (Re)starting crond "
+echo -ne "(Re)starting crond "
     pkill -9 crond &> /dev/null
     /data/bin/crond -c $ETC/crontabs
     echo "(PID: $(pidof crond))  [DONE]"
     
 # Start basic-charging-control
-    echo -n "$(logdate) "
     basic-charging-control start
 
 setenforce 1
 
-echo -n "$(logdate) Mounting / as RO "
-    /system/bin/mount -o remount,ro /
-    echo [DONE]
-    
 if [[ "$1" ]]
     then
     termux-notification --content "Boot scripts are completed!" --id post-boot

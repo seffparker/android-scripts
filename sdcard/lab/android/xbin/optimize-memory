@@ -5,16 +5,16 @@
 ## Version: 20191129
 
 source check-root
-source set-color
+source set-prompt
 
-echo -ne "$(logdate) Saving buffers "
+echo -ne "Saving buffers "
     sync
     DONE
 
-echo -ne "$(logdate) Dropping caches "
+echo -ne "Dropping caches "
     echo 1 > /proc/sys/vm/drop_caches
     DONE
 
-echo -ne "$(logdate) Compacting memory "
+echo -ne "Compacting memory "
     echo 1 > /proc/sys/vm/compact_memory
     DONE

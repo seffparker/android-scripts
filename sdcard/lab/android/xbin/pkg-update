@@ -2,15 +2,15 @@
 
 ## Update Termux APT packages
 ## Author: Seff P
-## Version: 20191203
+## Version: 20201017
 
 source set-dir
-source set-color
+source set-prompt
 
 case $1 in
  -r|r*)
     CURR_TS=$(date +%s)
-    PKG_UPDATE_TS=$(date +%s -r $VAR/pkg-update.last_run)
+    PKG_UPDATE_TS=$(date +%s -r /data/data/com.termux/files/usr/var/log/apt/history.log)
     let PKG_UPDATE_AGE=$CURR_TS-$PKG_UPDATE_TS
     let PKG_UPDATE_THR=$(cat $ETC/pkg-update.remind_days)*86400
     let PKG_UPDATE_AGE_DAYS=$PKG_UPDATE_AGE/86400
@@ -21,26 +21,25 @@ case $1 in
     echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago"
     ;;
     
- -u|u*)
+ "")
     if check-root &> /dev/null
-        then echo "$(logdate) pkg-update cannot run as root $(FAIL)"
+        then echo "pkg-update cannot run as root $(FAIL)"
         exit 1
     fi
 	if check-ping
 	then
-	    echo -e "$(logdate) pkg-update $(BEGIN)"
+	    echo -e "pkg-update $(BEGIN)"
 	    apt update
-	    apt autoremove -y
 	    apt full-upgrade -y
+	    apt autoremove -y
 	    apt list --installed > $VAR/pkg-update.installed_pkg
-	    date > $VAR/pkg-update.last_run
-	    echo -e "$(logdate) pkg-update $(DONE)"
+	    echo -e "pkg-update $(DONE)"
 	else
-	    echo -e "$(logdate) pkg-update $(FAIL)"
+	    echo -e "pkg-update $(FAIL)"
 	fi
     ;;
     
  *)
-    echo "Usage $(basename $0) [-r|report | -u|update]"
+    echo "Usage $(basename $0) [-r|report]"
     ;;
 esac

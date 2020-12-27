@@ -2,17 +2,17 @@
 
 ## Detatch given apps from PlayStore
 ## Author: Seff P
-## Version: 20200910
+## Version: 20201110
 
 source set-dir
-source set-color
+source set-prompt
 
 PLAY_DB_DIR="/data/data/com.android.vending/databases"
 
 doDetach () {
     for PKG_URI in $*
     do
-    	echo -n "$(logdate) Detaching $PKG_URI "
+    	echo -n "Detaching $PKG_URI "
     	CHECK=$(sqlite3 $PLAY_DB_DIR/library.db "SELECT doc_id FROM ownership WHERE doc_id = '$PKG_URI'";)
     
     	if [ -z "$CHECK" ]
@@ -31,7 +31,7 @@ doDetach () {
 doCleanUp () {
 	if [[ "$DETACHED" ]]
 		then
-		echo -n "$(logdate) Performing cleanup "
+		echo -n "Restarting PlayStore "
 		setenforce 0
 		/system/bin/am force-stop com.android.vending
 		setenforce 1

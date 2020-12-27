@@ -6,7 +6,7 @@
 
 source check-root
 source termux-env
-source set-color
+source set-prompt
 
 PLS_DIR="/sdcard/Playlists"
 
@@ -29,7 +29,7 @@ select DEST in ${DESTS} $(ls -d /mnt/media_rw/*/ 2> /dev/null)
     fi
     done
 
-echo "Enter a custom subdirectory:"
+echo -n "Enter optional subdirectory: "
 read SUB_DIR
 mkdir -p $DEST/$SUB_DIR
 

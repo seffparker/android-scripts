@@ -1,6 +1,6 @@
 # Set styles for common status outputs
 
-if [[ -z $BG ]] ; then
+if tty -s ; then
     R='\e[01;31m'
     G='\e[01;32m'
     Y='\e[01;33m'
@@ -8,6 +8,10 @@ if [[ -z $BG ]] ; then
     W='\e[00m'
 fi
 
+BEGIN () {
+    echo -e "${B} [ BEGIN ]${W}"
+    }
+    
 DONE () {
     echo -e "${G} [ DONE ]${W}"
     }
@@ -18,12 +22,13 @@ UPDATED () {
     echo -e "${G} [ UPDATED ]${W}"
     }    
 
-FAIL () {
-    echo -e "${R} [ FAIL ]${W}"
-    }
 SKIP () {
     echo -e "${Y} [ SKIP ]${W}"
     }
-BEGIN () {
-    echo -e "${B} [ BEGIN ]${W}"
+ABORT () {
+    echo -e "${Y} [ ABORT ]${W}"
+    }
+    
+FAIL () {
+    echo -e "${R} [ FAIL ]${W}"
     }

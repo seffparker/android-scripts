@@ -4,7 +4,7 @@
 ## Author: Seff P
 ## Version: 20191206
 
-source set-color
+source set-prompt
 
 if ! [ $(id -u) == "0" ]
  then echo -e "${R}ERROR: Root privilege required!${W}"

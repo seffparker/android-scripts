@@ -1,0 +1,9 @@
+#!/data/bin/bash
+
+## Sum the first coloumn of given list
+## Author: Seff P
+## Version: 20191129
+
+echo -e "Paste the list here and hit Ctrl+D...\n"
+
+cat | sed 's|,||g' | awk '/^[0-9]/ {sum += $1; count += 1} END {print "\n___\nSum of " count " numbers is " sum}'

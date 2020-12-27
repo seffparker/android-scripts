@@ -6,14 +6,14 @@
 
 source check-root
 source set-dir
-source set-color
+source set-prompt
 
 TARGET_DELETE_PERC=10
 source $ETC/optimize-cache.conf
 
 if [[ $ENABLE == 1 ]]
     then
-    echo "$(logdate) Scanning cache files $(BEGIN)"
+    echo "Scanning cache files $(BEGIN)"
     CACHE_INT=$(du -kscx -d 1 /data/data/*/cache | awk '/total$/ {print $1}')
     CACHE_SDC=$(du -kscx -d 1 /storage/emulated/0/Android/data/*/cache | awk '/total$/ {print $1}')
     let CACHE_TOTAL=$CACHE_INT+CACHE_SDC
@@ -22,14 +22,14 @@ if [[ $ENABLE == 1 ]]
     CUR_FREE=$(df -P | awk '$6=="/data" {print $4}')
     let TARGET_FREE=$CUR_FREE+$TARGET_DELETE_KB
 
-    echo "$(logdate) Deleting caches of $TARGET_DELETE_KB KB ($TARGET_DELETE_PERC% of $CACHE_TOTAL)"
+    echo "Deleting caches of $TARGET_DELETE_KB KB ($TARGET_DELETE_PERC% of $CACHE_TOTAL)"
      unset LD_LIBRARY_PATH LD_PRELOAD
     setenforce 0
     /system/bin/pm trim-caches ${TARGET_FREE}K
     setenforce 1
     NEW_FREE=$(df -P | awk '$6=="/data" {print $4}')
-    echo "$(logdate) Storage free before: ${CUR_FREE} KB"
-    echo "$(logdate) Storage free after:  ${NEW_FREE} KB"
+    echo "Storage free before: ${CUR_FREE} KB"
+    echo "Storage free after:  ${NEW_FREE} KB"
 else
-    echo "$(logdate) Cache cleaning is disabled $(SKIP)"
+    echo "Cache cleaning is disabled $(SKIP)"
 fi    

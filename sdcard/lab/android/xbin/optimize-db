@@ -2,11 +2,10 @@
 
 ## Optimize Android app databases
 ## Author: Seff P
-## Version: 20191204
+## Version: 20201202
 
-source check-root
 source set-dir
-source set-color
+source set-prompt
 
  case $1 in
  -r|r*)
@@ -23,11 +22,12 @@ source set-color
     ;;
 
  -o|o*)
+    source check-root
     PRESIZE=0
     POSTSIZE=0
     termux-wake-lock
-    svc data disable
-    svc wifi disable
+    /system/bin/svc data disable
+    /system/bin/svc wifi disable
     LD_PRELOAD=""
     for DB in \
     $(busybox find /data/data/*/databases \
@@ -36,7 +36,7 @@ source set-color
     do \
         CURSIZE=$(du $DB | awk {'print $1'})
         PRESIZE=$(( $PRESIZE + $CURSIZE ))
-        echo -n "$(logdate) "
+        echo -n ""
         echo "$DB" | awk -F '/' '{printf $4" - "$6}'
         if sqlite3 $DB 'REINDEX;' &> /dev/null
             then

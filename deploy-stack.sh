@@ -7,7 +7,7 @@
 
 if [ $(id -u) -ne 0 ]
     then
-    echo "ERROR: Should be run as root user. Existing..."
+    echo "ERROR: Should be run as root user. Exiting..."
     exit 1
 fi
 

@@ -2,115 +2,146 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20200910
+## Version: 20201223
 
 source check-root
-
 source set-dir
-source set-color
+source set-prompt
 
-SYS_HOSTS="$BINDS/hosts"
+HOSTS_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+STRING="StevenBlack"
+SYS_HOSTS="/data/adb/modules/batmobile-mods/system/etc/hosts"
+UPDATED=false
 CURL="/system/bin/curl"
-MODE=$2
-[ $MODE ] || MODE="-#"
 
-case "$1" in
- -e|e*)
-    echo -n "$(logdate) Enabling Adblock "
-    if ! head -10 $SYS_HOSTS | grep -q StevenBlack
+is_enabled () {
+    if head -10 $SYS_HOSTS | grep -q ${STRING}
+        then return 0
+    else
+        echo "Adblock is disabled $(ABORT)"
+        return 1
+    fi
+}
+
+enable_adblock () {
+    echo -n "Enabling Adblock "
+    if ! is_enabled &> /dev/null
     then
         cat $ETC/hosts.final > $SYS_HOSTS
         DONE
     else
-        SKIP
+        OK
     fi
-    ;;
+}
   
- -d|d*)
-    echo -n "$(logdate) Disabling Adblock "
-    if head -10 $SYS_HOSTS | grep -q StevenBlack
+disable_adblock () {
+    echo -n "Disabling Adblock "
+    if is_enabled &> /dev/null
     then
         cat $ETC/hosts.disabled > $SYS_HOSTS
         DONE
     else
-        SKIP
+        OK
     fi
-    ;;
-  
- -u|u*)
-    if ! head -10 $SYS_HOSTS | grep -q StevenBlack
-    then
-        echo -e "$(logdate) Adblock is disabled. Update aborted!"
-        exit 1
-    fi
-    
-    echo -e "$(logdate) Updating Adblock $(BEGIN)"
-    CUR_BYTES=$(cat $VAR/hosts.comm_bytes)
-    echo -ne "$(logdate) Downloading update "
-    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts | busybox awk '/Content-Length/ {printf $2}')
+}
 
+check () {
+    echo -n "Checking for Adblock update "
+    CUR_BYTES=$(cat $VAR/hosts.comm_bytes)
+    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${HOSTS_URL}  | busybox awk '/Content-Length/ {printf $2}')
     if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
-        then SKIP
-        date > $VAR/adblock-update.last_run
+        then OK
+        date > $VAR/adblock-update.last_checked
+        return 2
     elif [ -z "$NEW_BYTES" ]
         then FAIL
+        return 1
     else
-        PREV_RECORDS=$(cat $VAR/hosts.comm_records)
-        $CURL --insecure https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts -o $ETC/hosts.comm $MODE
+        date > $VAR/adblock-update.last_checked
+        UPDATED
+    fi
+}
+  
+download () {
+    echo -ne "Downloading update "
+    PREV_RECORDS=$(cat $VAR/hosts.comm_records)
+    if $CURL --insecure -s ${HOSTS_URL} -o $ETC/hosts.comm.tmp
+    then
+        mv -f $ETC/hosts.comm.tmp $ETC/hosts.comm
         echo -n $NEW_BYTES > $VAR/hosts.comm_bytes
         CUR_RECORDS=$(grep -c ^0 $ETC/hosts.comm)
         echo $CUR_RECORDS > $VAR/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
-        date > $VAR/adblock-update.last_run
         echo -e "Database version: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
-        COMM_UPED=true
+        UPDATED=true
         DONE
+    else
+        FAIL
+        rm -f $ETC/hosts.comm.tmp
+        return 1
     fi
+ }
 
-    echo -ne "$(logdate) Updating user entries "
+apply () { 
+    echo -ne "Updating user entries "
     if ! md5sum -c $VAR/hosts.user_md5 &> /dev/null
-        then USER_UPED=true
+        then UPDATED=true
         md5sum $ETC/hosts.user > $VAR/hosts.user_md5
-        DONE
+        UPDATED
     else
         SKIP
     fi
     
+    echo -en "Updating excludes "
     if ! md5sum -c $VAR/hosts.excludes_md5 &> /dev/null
-        then EXCL_UPED=true
+        then UPDATED=true
         md5sum $ETC/hosts.excludes > $VAR/hosts.excludes_md5
-    fi
-    
-    echo -en "$(logdate) Processing excludes "
-    if [[ "$COMM_UPED" || "$EXCL_UPED" ]]
-        then
-        for EXCLUDE in $(cat $ETC/hosts.excludes)
-            do
-            sed -i "/$EXCLUDE/d" $ETC/hosts.comm
-        done
-        DONE
+        UPDATED
     else
         SKIP
     fi
-    echo -e "$(logdate) Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
-    echo -e "$(logdate) Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
     
-    USER_REC=$(grep -c ^0 $ETC/hosts.user)
-    echo -e "$(logdate) User entries: $USER_REC"
-    
-    echo -en "$(logdate) Applying new update "
-    if [[ "$COMM_UPED" || "$USER_UPED" || "$EXCL_UPED" ]]
+    echo -en "Rebuilding hosts file "
+    if $UPDATED
         then
         cp -f $ETC/hosts.comm $ETC/hosts.final
         cat $ETC/hosts.user >> $ETC/hosts.final
+        
+        for EXCLUDE in $(cat $ETC/hosts.excludes | sed 's/#.*//g')
+            do
+            sed -i "/$EXCLUDE/d" $ETC/hosts.final
+        done
         cat $ETC/hosts.final > $SYS_HOSTS
         DONE
+        echo -e "Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
+        echo -e "Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
+        
+        USER_REC=$(grep -c ^0 $ETC/hosts.user)
+        echo -e "User entries: $USER_REC"
+        echo "Updating Adblock $(DONE)"
     else
         SKIP
     fi
+}
     
+case $1 in
+ -e | en*)
+    enable_adblock
     ;;
+
+ -d | di*)
+    disable_adblock
+    ;;
+
+ -u | up*)
+    is_enabled && check && download && apply
+    ;;
+
+ -a | ap*)
+    is_enabled && apply
+    ;;
+
  *)
-    echo "Usage: $(basename $0) [-u|update | -e|enable -d|disable]"
+    echo "Usage: $(basename $0) [-a|apply -u|update -e|enable -d|disable]"
     ;;
 esac

@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 20200918
+# Version: 20200927
 
 source check-root
 source set-dir
@@ -16,7 +16,7 @@ set_cycle () {
     RESUME_LEVEL=$CYCLE_RESUME_LEVEL
     CURRENT_LIMIT=$CYCLE_CURRENT_LIMIT
     BUTTON1_TEXT="Supercharge 🚀"
-    BUTTON1_ACTION="su -c 'pkill -l USR2 -f $0'"
+    BUTTON1_ACTION="su -c '/system/bin/pkill -l USR2 -f $0'"
     SETTLED=false
     logdate "Set to Cyclecharge mode" >> $BCC_LOG
 }
@@ -27,8 +27,7 @@ set_super () {
     RESUME_LEVEL=$SUPER_RESUME_LEVEL
     CURRENT_LIMIT=$SUPER_CURRENT_LIMIT
     BUTTON1_TEXT="Cyclecharge ♻️"
-    BUTTON1_ACTION="su -c 'pkill -l USR1 -f $0'"
-    IS_DISABLED=true
+    BUTTON1_ACTION="su -c '/system/bin/pkill -l USR1 -f $0'"
     SETTLED=false
     logdate "Set to Supercharge mode" >> $BCC_LOG
 }
@@ -107,7 +106,7 @@ while true
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}" \
             --button2 "Hide Status" \
-            --button2-action "su  -c 'pkill -l HUP -f $0'"
+            --button2-action "su  -c '/system/bin/pkill -l HUP -f $0'"
         fi
         
         if [[ $TEMP -ge $PAUSE_TEMP ]] && ! $IS_PAUSED
@@ -200,24 +199,22 @@ done
 
 daemon_start () {
     echo -n "Starting Basic Charging Control "
-    if kill-process $0 $PID_FILE check-only
+    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
         then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(SKIP)"
     else
         logdate "Starting Basic Charging Control" > $BCC_LOG
         echo $ON > $INPUT_SWITCH
-        set_cycle
-        daemon_run &> /dev/null &
-        PID=$!
-        echo $PID > $PID_FILE
+        start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
+        PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
     fi
 }
 
 daemon_status () {
     echo -n "Basic Charging Control is "
-    if kill-process $0 $PID_FILE check-only
+    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
         then
         PID=$(cat $PID_FILE)
         echo "running (PID: $PID) $(OK)"
@@ -229,9 +226,10 @@ daemon_status () {
 daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping Basic Charging Control "
-    if kill-process $0 $PID_FILE
+    if start-stop-daemon -Kq -p $PID_FILE
         then
         echo $ON > $INPUT_SWITCH
+        rm -f $PID_FILE
         echo "(PID: $PID) $(DONE)"
     else
         SKIP
@@ -243,6 +241,10 @@ daemon_stop () {
 case $1 in
     start)
         daemon_start
+        ;;
+    run)
+        set_cycle
+        daemon_run
         ;;
     status)
         daemon_status
