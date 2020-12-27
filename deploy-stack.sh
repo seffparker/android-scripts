@@ -3,7 +3,7 @@
 # Shell script to deploy the whole stack
 # 
 # Author: Seff Parker
-# Version: 20200826
+# Version: 20201227
 
 if [ $(id -u) -ne 0 ]
     then
@@ -22,6 +22,10 @@ echo "Copying assets..."
 cp -rf data/* /data/
 cp -rf sdcard/* /sdcard/
 
+echo "Configure Magisk module..."
+mkdir -p /data/adb/modules/batmobile-mods/system/etc/bash
+ln -s /sdcard/lab/android/etc/bashrc.root /data/adb/modules/batmobile-mods/system/etc/bash/bashrc
+
 echo "Installing user scripts and envs..."
 rm -f /data/data/com.termux/files/home/.bashrc
 ln -s /sdcard/lab/android/etc/bashrc.termux /data/data/com.termux/files/home/.bashrc
@@ -38,3 +42,5 @@ chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
 echo "Installing Magisk boot scripts..."
 cp -rf ./data/adb/* /data/adb/
 chmod +x /data/adb/service.d/* /data/adb/post-fs-data.d/*
+
+echo "Reboot to apply the changes"
