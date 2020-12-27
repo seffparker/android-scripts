@@ -18,6 +18,10 @@ mkdir /data/bin /data/xbin /data/root
 ln -s /data/adb/magisk/busybox /data/bin/busybox
 /data/bin/busybox --install -s /data/bin/
 
+echo "Copying assets into default workdir..."
+mkdir -p /sdcard/lab/android
+cp -rf ./* sdcard/lab/android/
+
 echo "Installing user scripts and envs..."
 rm -f /data/data/com.termux/files/home/.bashrc
 ln -s /sdcard/lab/android/etc/bashrc.termux /data/data/com.termux/files/home/.bashrc
