@@ -2,7 +2,7 @@
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20201106
+## Version: 20210110
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir
@@ -28,6 +28,14 @@ pgrep crond &> /dev/null && echo "RUNNING (PID: $(pidof crond))" || echo STOPPED
 
 echo -ne "BCC service status:\t"
 pgrep -f basic-charging-control &> /dev/null && echo "RUNNING (PID: $(cat $RUN/bcc.pid))" || echo STOPPED
+
+echo -ne "System Monitor daemon:\t"
+pgrep -f system-monitor &> /dev/null && echo "RUNNING (PID: $(cat $RUN/system-monitor.pid))" || echo STOPPED
+
+echo -ne "Status Widget daemon:\t"
+pgrep -f status-widget &> /dev/null && echo "RUNNING (PID: $(cat $RUN/status-widget.pid))" || echo STOPPED
+
+
 
 echo -ne "Load average:\t\t"
 cat /proc/loadavg | cut -d' ' -f1-3

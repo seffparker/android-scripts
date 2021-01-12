@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20201125
+## Version: 20210107
 
 source check-root
 source set-dir
@@ -11,7 +11,9 @@ source set-prompt
 DATE_LOG="$LOG/daily-jobs.history"
 OUTPUT_LOG="$LOG/daily-jobs.log"
 PREV_PID_FILE="$RUN/daily-jobs.pid-previous"
+BUCKET="$VAR/status-widget/bucket/daily-jobs"
 ONLINE=false
+WITH=without
 JOB=1 # Index of first job
 N=6 # Total no. of jobs
 
@@ -21,7 +23,7 @@ notify () {
 }
 
 prepare () {
-    PREV_PID=$(cat $PREV_PID_FILE &> /dev/null)
+    PREV_PID=$(cat $PREV_PID_FILE 2> /dev/null)
     busybox pkill -9 -P $PREV_PID &> /dev/null
     busybox pkill -9 $PREV_PID &> /dev/null
     echo $$ > $PREV_PID_FILE
@@ -40,7 +42,7 @@ run_jobs () {
     notify 0 "Preparing..."
     
     uptime
-    check-ping &> /dev/null && ONLINE=true
+    check-ping &> /dev/null && ONLINE=true && WITH=with
     
     if [[ $BG ]] && ! $ONLINE
         then
@@ -86,6 +88,7 @@ finish () {
     notify $JOB "Finishing up..."
     sed -i 1d $DATE_LOG
     echo "$(logdate) ONLINE=$ONLINE" >> $DATE_LOG
+    echo "Daily Jobs completed at $(date +"%l:%M %p") $WITH Internet" > $BUCKET
     echo -e "daily-jobs $(DONE)"
     echo -en "Releasing wake-lock "
     termux-notification-remove dailyjobs

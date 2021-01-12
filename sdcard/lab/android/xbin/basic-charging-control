@@ -1,8 +1,9 @@
 #!/data/bin/bash
+#!/data/bin/bash
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 20200927
+# Version: 20210107
 
 source check-root
 source set-dir
@@ -124,6 +125,7 @@ while true
             sleep $SLEEP_TINY
         else
             # connected, charging
+            echo "${MODE}charging $STATUS_TEXT" > ${BUCKET}
             sleep $SLEEP_SHORT
         fi
         
@@ -138,13 +140,16 @@ while true
             TEXT="Charging is limited to ${STOP_LEVEL}%"
             BUTTON_TEXT="$BUTTON1_TEXT"
             BUTTON_ACTION="$BUTTON1_ACTION"
+            END="completed"
             logdate "Charging limited to $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
             set_cycle
         else
             unset BUTTON_TEXT BUTTON_ACTION
+            END="interrupted"
             TEXT="Charging interrupted at $LEVEL%"
             logdate "Charging interrupted at $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
         fi
+        echo "Last charging cycle $END at $LEVEL% at $(date +"%l:%M %p")" > ${BUCKET}
         termux-notification -i bcc \
             -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
             -c "$TEXT" \
@@ -198,13 +203,13 @@ done
 }
 
 daemon_start () {
-    echo -n "Starting Basic Charging Control "
+    echo -n "Starting ${APP_NAME} "
     if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
         then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(SKIP)"
     else
-        logdate "Starting Basic Charging Control" > $BCC_LOG
+        logdate "Starting ${APP_NAME}" > $BCC_LOG
         echo $ON > $INPUT_SWITCH
         start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
         PID=$(cat $PID_FILE)
@@ -213,7 +218,7 @@ daemon_start () {
 }
 
 daemon_status () {
-    echo -n "Basic Charging Control is "
+    echo -n "${APP_NAME} is "
     if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
         then
         PID=$(cat $PID_FILE)
@@ -225,11 +230,12 @@ daemon_status () {
 
 daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
-    echo -n "Stopping Basic Charging Control "
-    if start-stop-daemon -Kq -p $PID_FILE
+    echo -n "Stopping ${APP_NAME} "
+    if start-stop-daemon -Kq -p $PID_FILE -s 9
         then
         echo $ON > $INPUT_SWITCH
         rm -f $PID_FILE
+        termux-notification-remove bcc
         echo "(PID: $PID) $(DONE)"
     else
         SKIP
@@ -260,4 +266,3 @@ case $1 in
         echo "Usage: start | status | restart | stop"
         ;;
 esac
-

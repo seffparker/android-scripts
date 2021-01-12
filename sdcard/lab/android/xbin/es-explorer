@@ -13,6 +13,7 @@ PKG_ID="com.estrongs.android.pop"
 PKG_NAME="ES Explorer"
 APK_URL="$VAR/$PKG_ID.url"
 TMP="/data/local/tmp/"
+BUCKET="$VAR/status-widget/bucket/es-explorer"
 
 checkUpdate () {
     echo -n "Checking ${PKG_NAME} update "
@@ -47,6 +48,7 @@ installUpdate () {
         termux-notification --title "${PKG_NAME} is successfully updated" \
         --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID
         echo "Updated version: $PKG_VERSION_NEW"
+        echo "$PKG_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
         echo "Updating ${PKG_NAME} $(DONE)"
     else
         termux-notification --title "${PKG_NAME} update failed" --id $PKG_ID

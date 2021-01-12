@@ -13,6 +13,7 @@ STRING="StevenBlack"
 SYS_HOSTS="/data/adb/modules/batmobile-mods/system/etc/hosts"
 UPDATED=false
 CURL="/system/bin/curl"
+BUCKET="$VAR/status-widget/bucket/adblock"
 
 is_enabled () {
     if head -10 $SYS_HOSTS | grep -q ${STRING}
@@ -73,6 +74,7 @@ download () {
         echo $CUR_RECORDS > $VAR/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
         echo -e "Database version: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
+        echo "Adblock database updated to version $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)" > $BUCKET
         UPDATED=true
         DONE
     else

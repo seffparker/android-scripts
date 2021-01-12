@@ -1,0 +1,85 @@
+#!/data/bin/bash
+
+# Report basic system status
+# Author: Seff Parker
+# Version: 20210110 v0.0.1
+
+source set-prompt
+source set-dir
+
+APP_NAME="System Monitor"
+PID_FILE="$RUN/system-monitor.pid"
+BUCKET="$VAR/status-widget/bucket/monitor"
+INTERVAL=30
+
+daemon_run () {
+    while true
+        do
+        LOAD=$(awk '{print "Load: "$1}' /proc/loadavg)
+        CPU_TEMP=$(awk '{print "CPU: " $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
+        BAT_TEMP=$(awk '{print "Bat. " $1/10 "°C"}' /sys/class/power_supply/battery/temp)
+        RAM=$(awk '/MemAvailable:/ {printf "RAM: " "%0.0f MB free",$2/1000}' /proc/meminfo)
+        echo "$LOAD, $RAM, $CPU_TEMP, $BAT_TEMP" > $BUCKET
+        sleep $INTERVAL
+    done
+}
+
+daemon_start () {
+    echo -n "Starting ${APP_NAME} "
+    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+        then
+        PID=$(cat $PID_FILE)
+        echo "(PID: $PID) $(SKIP)"
+    else
+        start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
+        PID=$(cat $PID_FILE)
+        echo "(PID: $PID) $(DONE)"
+    fi
+}
+
+daemon_status () {
+    echo -n "${APP_NAME} is "
+    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+        then
+        PID=$(cat $PID_FILE)
+        echo "running (PID: $PID) $(OK)"
+    else
+        echo "not running $(FAIL)"
+    fi
+}
+
+daemon_stop () {
+    PID=$(cat $PID_FILE 2> /dev/null)
+    echo -n "Stopping ${APP_NAME} "
+    if start-stop-daemon -Kq -p $PID_FILE -s 9
+        then
+        rm -f $PID_FILE
+        echo "(PID: $PID) $(DONE)"
+    else
+        SKIP
+    fi
+}
+
+# main ()
+
+case $1 in
+    start)
+        daemon_start
+        ;;
+    run)
+        daemon_run
+        ;;
+    status)
+        daemon_status
+        ;;
+    restart)
+        daemon_stop
+        daemon_start
+        ;;
+    stop)
+        daemon_stop
+        ;;
+    *)
+        echo "Usage: start | status | restart | stop"
+        ;;
+esac

@@ -6,6 +6,8 @@
 
 source set-dir
 source set-prompt
+BUCKET="$VAR/status-widget/bucket/pkg-update"
+
 
 case $1 in
  -r|r*)
@@ -17,6 +19,7 @@ case $1 in
     if [ $PKG_UPDATE_AGE -gt $PKG_UPDATE_THR ]
     then
         termux-run termux-notification --title "APT packages are not updated recently!" --content "Last updated $PKG_UPDATE_AGE_DAYS days ago" 
+        echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago" > $BUCKET
     fi
     echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago"
     ;;
@@ -33,6 +36,7 @@ case $1 in
 	    apt full-upgrade -y
 	    apt autoremove -y
 	    apt list --installed > $VAR/pkg-update.installed_pkg
+	    rm -f $BUCKET
 	    echo -e "pkg-update $(DONE)"
 	else
 	    echo -e "pkg-update $(FAIL)"

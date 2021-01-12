@@ -6,6 +6,7 @@
 
 source set-dir
 source set-prompt
+BUCKET="$VAR/status-widget/bucket/optimize-db"
 
  case $1 in
  -r|r*)
@@ -17,6 +18,8 @@ source set-prompt
     if [ $OPTIMIZE_DB_AGE -gt $OPTIMIZE_DB_THR ]
     then
         termux-run termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" 
+        echo "Database last optimized $OPTIMIZE_DB_AGE_DAYS days ago" > $BUCKET
+        
     fi
     echo "Database last optimized $OPTIMIZE_DB_AGE_DAYS days ago"
     ;;
@@ -50,6 +53,7 @@ source set-prompt
     done;
 
     date > $VAR/optimize-db.last_run
+    rm -f $BUCKET
     echo
     echo "Total DB size before: $PRESIZE KB"
     echo "Total DB size after : $POSTSIZE KB"

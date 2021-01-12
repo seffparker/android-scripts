@@ -12,6 +12,8 @@ source $ETC/hostname
 source $ETC/dns
 export BG=true
 
+BUCKET="$VAR/status-widget/bucket/boot"
+
 # Logs
 DATE_LOG="${LOG}/post-boot.history"
 sed -i 1d $DATE_LOG
@@ -75,13 +77,15 @@ echo -ne "(Re)starting crond "
     /data/bin/crond -c $ETC/crontabs
     echo "(PID: $(pidof crond))  [DONE]"
     
-# Start basic-charging-control
-    basic-charging-control start
+basic-charging-control start
+system-monitor start
+status-widget start
 
 setenforce 1
 
 if [[ "$1" ]]
     then
     termux-notification --content "Boot scripts are completed!" --id post-boot
+    echo "$HOSTNAME ignition at $(date +"%b %e, %a %l:%M %p" -r /storage)" > $BUCKET
     vibrate 1
 fi

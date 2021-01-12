@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20201206
+## Version: 20210107
 
 
 source check-root
@@ -59,7 +59,7 @@ daemon_stop () {
     then
         PID=$(cat $PID_FILE)
         busybox pkill -9 -P $PID &> /dev/null
-        start-stop-daemon -Kq -p $PID_FILE
+        start-stop-daemon -Kq -p $PID_FILE -s 9
         termux-wake-unlock
         termux-notification-remove audio-sleep
         rm -f $STATUS $PID_FILE

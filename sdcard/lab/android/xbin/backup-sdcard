@@ -13,6 +13,7 @@ RSYNC='/data/data/com.termux/files/usr/bin/rsync'
 OPTIONS="-truv --blocking-io -@ 5 --force --delete --stats --exclude-from=$ETC/backup-sdcard.excludes --delete-excluded"
 SRC='/data/media/0/'
 DEST='/mnt/media_rw/4A75-1B1E/phone_backup/'
+BUCKET="$VAR/status-widget/bucket/backup-sdcard"
 
 CheckBackupDrive(){
     if [ ! -d $DEST ]
@@ -31,6 +32,7 @@ case $1 in
     if [ $BACKUP_SDCARD_AGE -gt $BACKUP_SDCARD_THR ]
     then
         termux-run termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGE_DAYS days old"
+        echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago" > $BUCKET
     fi
     echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago"
     ;;
@@ -50,6 +52,7 @@ case $1 in
     $RSYNC $OPTIONS $SRC $DEST
     date > $DEST/../backup-sdcard.last_run
     date > $VAR/backup-sdcard.last_run
+    rm -f $BUCKET
     termux-wake-unlock
     ;;
 
