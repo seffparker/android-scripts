@@ -2,47 +2,55 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20210107
+## Version: 20210123
 
-
-source check-root
 source /sdcard/lab/android/etc/bashrc.root
+source check-root
 source set-dir
 source set-prompt
 
 PID_FILE=$RUN/audio-sleep.pid
 STATUS=$VAR/audio-sleep.left
+EXTEND=30
+[[ -f $ETC/audio-sleep.conf ]] && source $ETC/audio-sleep.conf
 
 daemon_run () {
     termux-wake-lock
     for ((MIN=$1; MIN > 0; MIN--))
     do
+        logdate "DEBUG: $MIN minutes left to sleep"
         echo -n ${MIN} > ${STATUS}
         termux-notification --alert-once --ongoing --id audio-sleep \
         -t "Audio player will stop in $MIN minutes" \
-        --button1 "Extend 30m" \
-        --button1-action "su -c '$0 +30'"\
+        --button1 "Extend ${EXTEND}m" \
+        --button1-action "su -c '$0 +${EXTEND}'"\
         --button2 "Abort" \
-        --button2-action "su -c '$0 0'" 
+        --button2-action "su -c '$0 0'" &
         sleep 60
     done
     echo -n 0 > ${STATUS}
     termux-notification --content "Audio player is being stopped" \
         --ongoing --id audio-sleep \
-        --button1 "Extend 30m" \
-        --button1-action "su -c '$0 30'"
-    CUR_VOL=$(termux-volume | awk '/music/ {getline; print $2+0}')
-    for VOL in $(seq $CUR_VOL | sort -nr)
+        --button1 "Extend ${EXTEND}m" \
+        --button1-action "su -c '$0 ${EXTEND}'"
+    echo "DEBUG: Audio player is being stopped" 
+    ORG_VOL=$(termux-volume | awk '/music/ {getline; print $2+0}')
+    for VOL in $(seq $ORG_VOL | sort -nr)
         do
         termux-volume music $VOL
-        sleep 5
+        logdate "DEBUG: Current volume is $VOL"
+        sleep 10
         done
     input keyevent 86 # stop media
-    termux-volume music $CUR_VOL # restore volume
+    logdate "DEBUG: Restoring volume back to $ORG_VOL"
+    termux-volume music $ORG_VOL # restore volume
     /system/bin/svc bluetooth disable
-    rm -f $PID_FILE $STATUS
+    /system/bin/svc data disable
+    /system/bin/svc wifi disable
+    rm -fv $PID_FILE $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock
+    logdate "DEBUG: Exiting"
 }
 
 print_usage () {
@@ -55,29 +63,30 @@ print_usage () {
 
 daemon_stop () {
     echo -n "Aborting audio-sleep "
-    if start-stop-daemon -Ktq -p $PID_FILE
+    if daemon -t -p $PID_FILE -c $0
     then
         PID=$(cat $PID_FILE)
         busybox pkill -9 -P $PID &> /dev/null
-        start-stop-daemon -Kq -p $PID_FILE -s 9
+        daemon -k -p $PID_FILE -c $0
         termux-wake-unlock
         termux-notification-remove audio-sleep
         rm -f $STATUS $PID_FILE
         DONE
     else
-        SKIP
+        termux-notification-remove audio-sleep
+        OK
     fi
 }
 
 daemon_start () {
     echo -ne "Setting sleep timer to $1 minutes "
-    start-stop-daemon -S -m -p $PID_FILE -b $0 -- run $1
+    daemon -s -p $PID_FILE -c $0 -a "run $1"
     DONE
 }
 
 case $1 in
     run)
-        [[ $2 -gt 1 ]] && daemon_run $2 || print_usage
+        [[ $2 -gt 0 ]] && daemon_run $2 || print_usage
         ;;
     0)
         daemon_stop

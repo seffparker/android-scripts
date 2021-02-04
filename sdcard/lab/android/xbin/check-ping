@@ -2,8 +2,11 @@ source set-prompt
 
 HOST=1.1.1.1
 
-if ! /system/bin/ping -c 1 -i 0.2 -s 0 -w 2 $HOST &> /dev/null
+echo -n "Checking Internet"
+if /system/bin/ping -c 1 -i 0.2 -s 0 -w 2 $HOST &> /dev/null
     then
-    echo -e "${R}ERROR: No Internet!${W}"
+    OK
+else
+    FAIL
     exit 1
 fi

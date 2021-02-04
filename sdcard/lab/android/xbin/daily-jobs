@@ -12,8 +12,9 @@ DATE_LOG="$LOG/daily-jobs.history"
 OUTPUT_LOG="$LOG/daily-jobs.log"
 PREV_PID_FILE="$RUN/daily-jobs.pid-previous"
 BUCKET="$VAR/status-widget/bucket/daily-jobs"
-ONLINE=false
+IS_ONLINE=false
 WITH=without
+NET_WAIT=15
 JOB=1 # Index of first job
 N=6 # Total no. of jobs
 
@@ -23,48 +24,44 @@ notify () {
 }
 
 prepare () {
-    PREV_PID=$(cat $PREV_PID_FILE 2> /dev/null)
-    busybox pkill -9 -P $PREV_PID &> /dev/null
-    busybox pkill -9 $PREV_PID &> /dev/null
-    echo $$ > $PREV_PID_FILE
     cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
     exec &> >(logdate | tee "$OUTPUT_LOG")
+    echo -e "daily-jobs $(BEGIN)"
+    PREV_PID=$(cat $PREV_PID_FILE 2> /dev/null)
+    echo $$ > $PREV_PID_FILE
+    busybox pkill -9 -P $PREV_PID &> /dev/null
+    busybox pkill -9 $PREV_PID &> /dev/null
+    echo -en "Holding wake-lock "
+    termux-wake-lock
+    vibrate 1
+    sleep 1
+    DONE
+    termux-api-clean
+    notify 0 "Preparing..."
 }
 
 run_jobs () {
-    vibrate 1
-    sleep 1
-    echo -e "daily-jobs $(BEGIN)"
-    echo -en "Holding wake-lock "
-    termux-wake-lock; DONE
     echo "SHELL=$BASH $BASH_VERSION"
-    
-    notify 0 "Preparing..."
-    
     uptime
-    check-ping &> /dev/null && ONLINE=true && WITH=with
+    check-ping && IS_ONLINE=true && WITH=with
     
-    if [[ $BG ]] && ! $ONLINE
+    if [[ $BG ]] && ! $IS_ONLINE
         then
-        notify 0 "Waiting 15 seconds for Internet..."
-        echo "Waiting for Internet"
+        notify 0 "Waiting $NET_WAIT seconds for Internet..."
+        echo "Waiting $NET_WAIT seconds for Internet"
         vibrate 3
-        sleep 15
-        check-ping && ONLINE=true | logdate
+        sleep $NET_WAIT
+        check-ping && IS_ONLINE=true
         fi
     
-    if $ONLINE
+    if $IS_ONLINE
         then
         notify $JOB "Checking adblock update..."
         adblock update
     fi
     ((JOB++))
     
-    if $ONLINE
-        then
-        notify $JOB "Checking ES Explorer update..."
-        es-explorer -u
-    fi
+    $IS_ONLINE && apk-update -u
     ((JOB++))
     
     notify $JOB "Optimizing memory & cache..."
@@ -72,11 +69,10 @@ run_jobs () {
     optimize-memory
     ((JOB++))
     
-    
     notify $JOB "Generating maintenance report..."
-    echo "$(pkg-update report)"
-    echo "$(backup-sdcard report)"
-    echo "$(optimize-db report)"
+    apt-update report
+    backup-sdcard report
+    optimize-db report
     ((JOB++))
     
     notify $JOB "Detaching apps from PlayStore..."
@@ -87,7 +83,7 @@ run_jobs () {
 finish () {
     notify $JOB "Finishing up..."
     sed -i 1d $DATE_LOG
-    echo "$(logdate) ONLINE=$ONLINE" >> $DATE_LOG
+    echo "$(logdate) IS_ONLINE=$IS_ONLINE" >> $DATE_LOG
     echo "Daily Jobs completed at $(date +"%l:%M %p") $WITH Internet" > $BUCKET
     echo -e "daily-jobs $(DONE)"
     echo -en "Releasing wake-lock "

@@ -7,6 +7,7 @@
 source set-dir
 source set-prompt
 
+LIST=$ETC/detach.list
 PLAY_DB_DIR="/data/data/com.android.vending/databases"
 
 doDetach () {
@@ -17,7 +18,7 @@ doDetach () {
     
     	if [ -z "$CHECK" ]
     	then
-    	    SKIP
+    	    OK
     	else
     	    sqlite3 $PLAY_DB_DIR/library.db "DELETE from ownership where doc_id = '$PKG_URI'";
     	    sqlite3 $PLAY_DB_DIR/localappstate.db "DELETE from appstate where package_name ='$PKG_URI'";
@@ -41,7 +42,7 @@ doCleanUp () {
 
 case $1 in
   --pre-def)
-    doDetach $(cat $ETC/detach.list)
+    doDetach $(cat $LIST)
     ;;
   "")
     echo "Usage: $(basename $0) [PKG_URIs | --pre-def]"

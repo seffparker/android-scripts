@@ -6,8 +6,8 @@
 
 source set-prompt
 
-if ! [ $(id -u) == "0" ]
- then echo -e "${R}ERROR: Root privilege required!${W}"
+if [[ $(id -u) -ne 0 ]]
+ then echo "Checking root access $(FAIL)"
  # vibrate
  exit 1
 fi

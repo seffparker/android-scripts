@@ -38,9 +38,4 @@ chmod 755 /data/xbin/* /data/bin/*
 chgrp shell /data/xbin/* /data/bin/*
 chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
 
-# Magisk boot script
-echo "Installing Magisk boot scripts..."
-cp -rf ./data/adb/* /data/adb/
-chmod +x /data/adb/service.d/* /data/adb/post-fs-data.d/*
-
 echo "Reboot to apply the changes"

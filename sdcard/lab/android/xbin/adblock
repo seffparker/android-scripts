@@ -49,7 +49,7 @@ disable_adblock () {
 check () {
     echo -n "Checking for Adblock update "
     CUR_BYTES=$(cat $VAR/hosts.comm_bytes)
-    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${HOSTS_URL}  | busybox awk '/Content-Length/ {printf $2}')
+    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${HOSTS_URL}  | busybox awk 'BEGIN{IGNORECASE=1} /Content-Length/ {printf $2}')
     if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
         then OK
         date > $VAR/adblock-update.last_checked
@@ -74,7 +74,7 @@ download () {
         echo $CUR_RECORDS > $VAR/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
         echo -e "Database version: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
-        echo "Adblock database updated to version $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)" > $BUCKET
+        echo "Adblock hosts updated on $(date +%F)" > $BUCKET
         UPDATED=true
         DONE
     else
@@ -91,7 +91,7 @@ apply () {
         md5sum $ETC/hosts.user > $VAR/hosts.user_md5
         UPDATED
     else
-        SKIP
+        OK
     fi
     
     echo -en "Updating excludes "
@@ -100,7 +100,7 @@ apply () {
         md5sum $ETC/hosts.excludes > $VAR/hosts.excludes_md5
         UPDATED
     else
-        SKIP
+        OK
     fi
     
     echo -en "Rebuilding hosts file "

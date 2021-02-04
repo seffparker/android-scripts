@@ -31,5 +31,5 @@ if [[ $ENABLE == 1 ]]
     echo "Storage free before: ${CUR_FREE} KB"
     echo "Storage free after:  ${NEW_FREE} KB"
 else
-    echo "Cache cleaning is disabled $(SKIP)"
+    echo "Cache cleaning is disabled $(ABORT)"
 fi    

@@ -18,10 +18,10 @@ BUCKET="$VAR/status-widget/bucket/optimize-db"
     if [ $OPTIMIZE_DB_AGE -gt $OPTIMIZE_DB_THR ]
     then
         termux-run termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" 
-        echo "Database last optimized $OPTIMIZE_DB_AGE_DAYS days ago" > $BUCKET
+        echo "Databases last optimized $OPTIMIZE_DB_AGE_DAYS days ago" > $BUCKET
         
     fi
-    echo "Database last optimized $OPTIMIZE_DB_AGE_DAYS days ago"
+    echo "Databases last optimized $OPTIMIZE_DB_AGE_DAYS days ago"
     ;;
 
  -o|o*)
@@ -53,7 +53,7 @@ BUCKET="$VAR/status-widget/bucket/optimize-db"
     done;
 
     date > $VAR/optimize-db.last_run
-    rm -f $BUCKET
+    echo "Databases last optimized on $(date +%F)" > $BUCKET
     echo
     echo "Total DB size before: $PRESIZE KB"
     echo "Total DB size after : $POSTSIZE KB"

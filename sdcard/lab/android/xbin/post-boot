@@ -80,6 +80,7 @@ echo -ne "(Re)starting crond "
 basic-charging-control start
 system-monitor start
 status-widget start
+youtube-vanced patch
 
 setenforce 1
 

@@ -2,8 +2,9 @@
 
 # Report basic system status
 # Author: Seff Parker
-# Version: 20210110 v0.0.1
+# Version: 20210129 v0.1.0
 
+source check-root
 source set-prompt
 source set-dir
 
@@ -15,23 +16,23 @@ INTERVAL=30
 daemon_run () {
     while true
         do
-        LOAD=$(awk '{print "Load: "$1}' /proc/loadavg)
+        LOAD=$(/system/bin/ps -Ao PCPU | awk '{sum += $1; count += 1} END {printf "Load: " "%0.0f%%",sum/8}')
         CPU_TEMP=$(awk '{print "CPU: " $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
         BAT_TEMP=$(awk '{print "Bat. " $1/10 "°C"}' /sys/class/power_supply/battery/temp)
         RAM=$(awk '/MemAvailable:/ {printf "RAM: " "%0.0f MB free",$2/1000}' /proc/meminfo)
-        echo "$LOAD, $RAM, $CPU_TEMP, $BAT_TEMP" > $BUCKET
+        echo "$LOAD • $RAM • $CPU_TEMP • $BAT_TEMP" | tee $BUCKET
         sleep $INTERVAL
     done
 }
 
 daemon_start () {
     echo -n "Starting ${APP_NAME} "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "(PID: $PID) $(SKIP)"
+        echo "(PID: $PID) $(OK)"
     else
-        start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
+        daemon -s -p $PID_FILE -c $0 -a run
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
     fi
@@ -39,7 +40,7 @@ daemon_start () {
 
 daemon_status () {
     echo -n "${APP_NAME} is "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
         echo "running (PID: $PID) $(OK)"
@@ -51,12 +52,12 @@ daemon_status () {
 daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping ${APP_NAME} "
-    if start-stop-daemon -Kq -p $PID_FILE -s 9
+    if daemon -k -p $PID_FILE -c $0
         then
         rm -f $PID_FILE
         echo "(PID: $PID) $(DONE)"
     else
-        SKIP
+        OK
     fi
 }
 

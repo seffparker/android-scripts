@@ -2,11 +2,18 @@
 
 ## Optimize system RAM
 ## Author: Seff P
-## Version: 20191129
+## Version: 20210128
 
 source check-root
 source set-prompt
 
+show_Memory () {
+    MemFree=$(awk '/^MemFree:/ {printf "%0.0f MB",$2/1000}' /proc/meminfo)
+    MemCached=$(awk '/^Cached:/ {printf "%0.0f MB",$2/1000}' /proc/meminfo)
+    echo "Free: $MemFree, Cached: $MemCached"
+}
+
+BEFORE=$(show_Memory)
 echo -ne "Saving buffers "
     sync
     DONE
@@ -18,3 +25,7 @@ echo -ne "Dropping caches "
 echo -ne "Compacting memory "
     echo 1 > /proc/sys/vm/compact_memory
     DONE
+AFTER=$(show_Memory)
+
+echo "Before: $BEFORE"
+echo "After:  $AFTER"

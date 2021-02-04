@@ -13,17 +13,17 @@ BEGIN () {
     }
     
 DONE () {
-    echo -e "${G} [ DONE ]${W}"
+    echo -e "${Y} [ DONE ]${W}"
     }
 OK () {
     echo -e "${G} [ OK ]${W}"
     }
 UPDATED () {
-    echo -e "${G} [ UPDATED ]${W}"
+    echo -e "${Y} [ UPDATED ]${W}"
     }    
 
 SKIP () {
-    echo -e "${Y} [ SKIP ]${W}"
+    echo -e "${G} [ SKIP ]${W}"
     }
 ABORT () {
     echo -e "${Y} [ ABORT ]${W}"

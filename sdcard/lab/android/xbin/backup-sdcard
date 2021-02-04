@@ -52,7 +52,7 @@ case $1 in
     $RSYNC $OPTIONS $SRC $DEST
     date > $DEST/../backup-sdcard.last_run
     date > $VAR/backup-sdcard.last_run
-    rm -f $BUCKET
+    echo "Storage last backed up on $(date +%F)" > $BUCKET
     termux-wake-unlock
     ;;
 
