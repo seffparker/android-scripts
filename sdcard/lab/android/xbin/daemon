@@ -1,0 +1,80 @@
+#!/data/bin/bash
+
+# Manage script daemons using start-stop-daemon
+# Author: Seff Parker
+# Version: 0.0.1 20210124
+
+print_usage () {
+    echo "Usage: $(basename $0) -[skt] -p PID_FILE -c COMMAND [-a ARGS]"
+        exit 1
+}
+
+validate_args () {
+    if [[ -z $MODE || -z $PID_FILE || -z $CMD ]] || ! which $CMD &> /dev/null
+        then print_usage
+    fi
+}
+
+daemon_check () {
+    if PID=$(cat $PID_FILE 2> /dev/null) && [[ $(pgrep -f $CMD) =~ "$PID" ]]
+        then return 0
+    else
+        return 1
+    fi
+}
+
+daemon_start () {
+    start-stop-daemon -S -m -p $PID_FILE -b $CMD -- $ARGS
+    return $?
+}
+
+daemon_stop () {
+    if PID=$(cat $PID_FILE 2> /dev/null)
+        then busybox pkill -9 -P $PID &> /dev/null
+        start-stop-daemon -Kq -p $PID_FILE -s 9
+    fi
+    return $?
+}
+
+while getopts ":sktp:c:a:" OPT; do
+case ${OPT} in
+    s)
+        MODE=start
+        ;;
+    k)
+        MODE=stop
+        ;;
+    t)
+        MODE=status
+        ;;
+    p)
+        PID_FILE=${OPTARG}
+        ;;
+    c)
+        CMD=${OPTARG}
+        ;;
+    a)
+        ARGS=${OPTARG}
+        ;;
+    *)
+        print_usage
+        ;;
+    esac
+done
+
+validate_args
+
+case ${MODE} in
+    status)
+        daemon_check
+        exit $?
+        ;;
+    start)
+        daemon_check || daemon_start
+        exit $?
+        ;;
+    stop)
+        daemon_check && daemon_stop
+        exit $?
+        ;;
+esac
