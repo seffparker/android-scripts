@@ -1,0 +1,21 @@
+#!/data/bin/bash
+
+## Sync user scripts to system path
+## Author: Seff P
+## Version: 20201125
+
+# Preparation
+source check-root
+source set-dir
+source set-prompt
+
+echo -ne "Updating custom scripts "
+FLIST=$(rsync -ai --inplace --delete $XBIN /data/ --chmod=755 --chown=root:shell)
+
+if [[ $? -ne 0 ]]
+    then FAIL
+elif [[ $FLIST ]]; then
+    DONE
+else
+    OK
+fi
