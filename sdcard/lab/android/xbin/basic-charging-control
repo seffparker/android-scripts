@@ -1,9 +1,8 @@
 #!/data/bin/bash
-#!/data/bin/bash
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 20210107
+# Version: 2.0.0 20210203
 
 source check-root
 source set-dir
@@ -19,7 +18,7 @@ set_cycle () {
     BUTTON1_TEXT="Supercharge 🚀"
     BUTTON1_ACTION="su -c '/system/bin/pkill -l USR2 -f $0'"
     SETTLED=false
-    logdate "Set to Cyclecharge mode" >> $BCC_LOG
+    echo "Set to Cyclecharge mode"
 }
 
 set_super () {
@@ -30,19 +29,23 @@ set_super () {
     BUTTON1_TEXT="Cyclecharge ♻️"
     BUTTON1_ACTION="su -c '/system/bin/pkill -l USR1 -f $0'"
     SETTLED=false
-    logdate "Set to Supercharge mode" >> $BCC_LOG
+    echo "Set to Supercharge mode"
 }
 
 hide_status () {
     SHOW_STATUS=false
     termux-notification-remove bcc
-    logdate "Notification disabled for this cycle" >> $BCC_LOG
+    echo "Notification disabled for this cycle"
 }
 
 daemon_run () {
 trap set_cycle USR1
 trap set_super USR2
 trap hide_status HUP
+exec &> >(logdate | tee "$BCC_LOG")
+echo "Starting ${APP_NAME}"
+set_cycle
+echo $ON > $INPUT_SWITCH
 
 while true
     do
@@ -61,14 +64,14 @@ while true
             INIT=false
             SETTLED=false
             STATUS_TEXT="is initializing"
-            logdate "${MODE}charging initialized at $LEVEL% / ${TEMP}°C" >> $BCC_LOG
+            echo "${MODE}charging initialized at $LEVEL% / ${TEMP}°C"
             
         elif $IS_PAUSED
             then # pause charging
             echo $PAUSE > $CURR_LIMIT_FILE
             if [[ $TEMP -le $RESUME_TEMP ]]
                 then # resume charging
-                logdate "Charging resumed at ${RESUME_TEMP}°C" >> $BCC_LOG
+                echo "Charging resumed at ${RESUME_TEMP}°C"
                 IS_PAUSED=false
             fi
     
@@ -80,7 +83,7 @@ while true
                 sleep $SLEEP_TINY
                 CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
-                logdate "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" >> $BCC_LOG
+                echo "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
                 STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
                 SETTLED=true
                 unset CURR_MAX
@@ -113,7 +116,7 @@ while true
         if [[ $TEMP -ge $PAUSE_TEMP ]] && ! $IS_PAUSED
             then # prepare to pause charging
             IS_PAUSED=true
-            logdate "Charging paused at ${TEMP}°C, resumes at ${RESUME_TEMP}°C. Level ${LEVEL}%" >> $BCC_LOG
+            echo "Charging paused at ${TEMP}°C, resumes at ${RESUME_TEMP}°C. Level ${LEVEL}%"
             STATUS_TEXT="paused at ${PAUSE_TEMP}°C, resumes at ${RESUME_TEMP}°C"
         fi      
        
@@ -141,15 +144,15 @@ while true
             BUTTON_TEXT="$BUTTON1_TEXT"
             BUTTON_ACTION="$BUTTON1_ACTION"
             END="completed"
-            logdate "Charging limited to $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
+            echo "Charging limited to $LEVEL%. Temp. ${TEMP}°C"
             set_cycle
         else
             unset BUTTON_TEXT BUTTON_ACTION
             END="interrupted"
             TEXT="Charging interrupted at $LEVEL%"
-            logdate "Charging interrupted at $LEVEL%. Temp. ${TEMP}°C" >> $BCC_LOG
+            echo "Charging interrupted at $LEVEL%. Temp. ${TEMP}°C"
         fi
-        echo "Last charging cycle $END at $LEVEL% at $(date +"%l:%M %p")" > ${BUCKET}
+        echo "Charging $END at $(date +"%l:%M %p") with +$LEVEL_UP% to $LEVEL%" > ${BUCKET}
         termux-notification -i bcc \
             -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
             -c "$TEXT" \
@@ -162,7 +165,7 @@ while true
         
     elif $IS_DISABLED
         then # above resume level. Disabled, not charging
-        logdate "Level $LEVEL% is above $RESUME_LEVEL%. Disabled, Not charging" >> $BCC_LOG
+        echo "Level $LEVEL% is above $RESUME_LEVEL%. Disabled, Not charging"
         STATE=$(cat $INPUT_STATE)
         if [[ $STATE -eq $ONLINE ]] && [[ $LEVEL -ne 100 ]] && $SHOW_WARNING
             then # charger just connected, show warning
@@ -180,7 +183,9 @@ while true
         fi
         
         while grep -qw $STATE $INPUT_STATE && [[ $LEVEL -ge $RESUME_LEVEL ]]
-            do sleep $SLEEP_SHORT
+            do # not charging
+            sleep $SLEEP_SHORT
+            inotifywait -qq ee close $INPUT_STATE
             LEVEL=$(cat $LEVEL_FILE)
         done
         
@@ -188,15 +193,16 @@ while true
             then # re-enable charging
             echo $ON > $INPUT_SWITCH
             IS_DISABLED=false
-            logdate "Charging re-enabled at $LEVEL%" >> $BCC_LOG
+            echo "Charging re-enabled at $LEVEL%"
             sleep $SLEEP_TINY
         fi
         
     else
         # not connected, not charging
-        logdate "Level is $LEVEL%. Not connected" >> $BCC_LOG
+        echo "Level is $LEVEL%. Not connected"
         while grep -qw $OFFLINE $INPUT_STATE
-                do sleep $SLEEP_SHORT
+            do sleep $SLEEP_SHORT
+            inotifywait -qq -e close $INPUT_STATE
         done
     fi
 done
@@ -204,14 +210,12 @@ done
 
 daemon_start () {
     echo -n "Starting ${APP_NAME} "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "(PID: $PID) $(SKIP)"
+        echo "(PID: $PID) $(OK)"
     else
-        logdate "Starting ${APP_NAME}" > $BCC_LOG
-        echo $ON > $INPUT_SWITCH
-        start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
+        daemon -s -p $PID_FILE -c $0 -a run
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
     fi
@@ -219,7 +223,7 @@ daemon_start () {
 
 daemon_status () {
     echo -n "${APP_NAME} is "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
         echo "running (PID: $PID) $(OK)"
@@ -231,14 +235,14 @@ daemon_status () {
 daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping ${APP_NAME} "
-    if start-stop-daemon -Kq -p $PID_FILE -s 9
+    if daemon -k -p $PID_FILE -c $0
         then
         echo $ON > $INPUT_SWITCH
         rm -f $PID_FILE
         termux-notification-remove bcc
         echo "(PID: $PID) $(DONE)"
     else
-        SKIP
+        OK
     fi
 }
 
@@ -249,7 +253,6 @@ case $1 in
         daemon_start
         ;;
     run)
-        set_cycle
         daemon_run
         ;;
     status)

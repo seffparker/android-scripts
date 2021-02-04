@@ -2,8 +2,9 @@
 
 # Generate plain HTML file from text file
 # Author: Seff Parker
-# Version: 20210109 v0.0.1
+# Version: 20210203 v1.0.0
 
+source check-root
 source set-prompt
 source set-dir
 
@@ -12,15 +13,14 @@ PID_FILE="$RUN/status-widget.pid"
 BUCKET="$VAR/status-widget/bucket"
 HTML="$VAR/status-widget/html/status-widget"
 NGX_CONF="$ETC/nginx/status-widget.conf"
-INTERVAL=10
 
 daemon_run () {
+    exec &> >(logdate)
     nginx -c $NGX_CONF
     while true
         do
-        HASH=$(stat -c %y $BUCKET/* | md5sum)
-        if [[ "$HASH" != "$HASH_PREV" ]]
-        then
+            inotifywait -e move -e modify -e delete $BUCKET
+            echo "Updating widgets"
             echo "<html><body>" > $HTML
             for ITEM in $(ls -t $BUCKET)
                 do
@@ -29,20 +29,17 @@ daemon_run () {
                 echo "</p>"
             done >> $HTML
             echo "</body></html>" >> $HTML
-            HASH_PREV=$HASH
-        fi
-        sleep $INTERVAL
     done
 }
 
 daemon_start () {
     echo -n "Starting ${APP_NAME} "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "(PID: $PID) $(SKIP)"
+        echo "(PID: $PID) $(OK)"
     else
-        start-stop-daemon -S -m -p $PID_FILE -b $0 -- run
+        daemon -s -p $PID_FILE -c $0 -a run
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
     fi
@@ -50,7 +47,7 @@ daemon_start () {
 
 daemon_status () {
     echo -n "${APP_NAME} is "
-    if start-stop-daemon -Ktq -p $PID_FILE &> /dev/null
+    if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
         echo "running (PID: $PID) $(OK)"
@@ -63,12 +60,12 @@ daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping ${APP_NAME} "
     nginx -s stop -c $NGX_CONF
-    if start-stop-daemon -Kq -p $PID_FILE -s 9
+    if daemon -k -p $PID_FILE -c $0
         then
         rm -f $PID_FILE
         echo "(PID: $PID) $(DONE)"
     else
-        SKIP
+        OK
     fi
 }
 
