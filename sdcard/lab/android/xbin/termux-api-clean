@@ -1,0 +1,16 @@
+#!/data/bin/bash
+# Remove stuck termux-api subcommads
+
+
+source check-root
+source set-prompt
+
+echo -n "Cleaning termux-api processes "
+if COUNT=$(pgrep -l -f files/usr/.*/termux- 2> /dev/null | grep -c .)
+    then
+    echo -n "($COUNT)"
+    pkill -9 -f files/usr/.*/termux-
+    DONE
+else
+    OK
+fi
