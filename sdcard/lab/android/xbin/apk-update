@@ -1,0 +1,81 @@
+#!/data/bin/bash
+
+## Update App from given APK file URL
+## Author: Seff P.
+## Version: 20210130
+
+source set-dir
+source set-prompt
+
+CONFD="$ETC/apk-update"
+APK_PATH="/sdcard/Backups/apps"
+TMP="/data/local/tmp/"
+
+read_conf () {
+    source $1
+    APK_URL="$VAR/$PKG_ID.url"
+    BUCKET="$VAR/status-widget/bucket/apk-update_${PKG_ID}"
+}
+
+checkUpdate () {
+    echo -n "Checking ${PKG_NAME} update "
+    APK_URL_OLD=$(cat $APK_URL 2> /dev/null)
+    APK_URL_NEW=$(/system/bin/curl -sk --connect-timeout 5 -m 10 $ASSET_URL | grep -o "$PATTERN" | head -1)
+    if [[ "$APK_URL_NEW" == "$APK_URL_OLD" ]]
+        then OK
+        return 2
+    elif [[ -z $APK_URL_NEW ]]
+        then FAIL
+        return 1
+    else
+        APK_NAME=$(basename $APK_URL_NEW)
+        termux-notification --title "${PKG_NAME} update available" --content "$APK_NAME" --id $PKG_ID
+        UPDATED
+        return 0
+    fi
+}
+
+installUpdate () {
+    PKG_VERSION_CURR=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
+    echo "Current version: $PKG_VERSION_CURR"
+    echo "Downloading $PKG_NAME update..."
+    echo $APK_PATH/$APK_NAME
+    wget -c -t 0 -T 10 $APK_URL_NEW -O $APK_PATH/$APK_NAME
+    echo "Updating ${PKG_NAME} $(BEGIN)"
+    cp -f $APK_PATH/$APK_NAME $TMP/
+    if pm install -f $TMP/$APK_NAME
+        then
+        echo $APK_URL_NEW > $APK_URL
+        PKG_VERSION_NEW=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
+        termux-notification --title "${PKG_NAME} is successfully updated" \
+        --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID
+        echo "Updated version: $PKG_VERSION_NEW"
+        echo "$PKG_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
+        echo "Updating ${PKG_NAME} $(DONE)"
+    else
+        termux-notification --title "${PKG_NAME} update failed" --id $PKG_ID
+        echo "Updating ${PKG_NAME} $(FAIL)"
+    fi
+    rm -f $TMP/$APK_NAME
+}
+
+case $1 in
+    -c | c* )
+        for CONF in $CONFD/*.conf
+            do read_conf $CONF
+            checkUpdate
+        done
+        ;;
+    -u | u* )
+        check-root && \
+        for CONF in $CONFD/*.conf
+            do read_conf $CONF
+            checkUpdate && \
+            installUpdate
+        done
+        ;;
+    *)
+        echo "Usage: -c|check | -u|update"
+        exit 1
+        ;;
+esac
