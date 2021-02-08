@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20210107
+## Version: 20210205
 
 source check-root
 source set-dir
@@ -13,7 +13,7 @@ OUTPUT_LOG="$LOG/daily-jobs.log"
 PREV_PID_FILE="$RUN/daily-jobs.pid-previous"
 BUCKET="$VAR/status-widget/bucket/daily-jobs"
 IS_ONLINE=false
-WITH=without
+ONLINE=offline
 NET_WAIT=15
 JOB=1 # Index of first job
 N=6 # Total no. of jobs
@@ -38,22 +38,22 @@ prepare () {
     DONE
     termux-api-clean
     notify 0 "Preparing..."
-}
-
-run_jobs () {
     echo "SHELL=$BASH $BASH_VERSION"
     uptime
-    check-ping && IS_ONLINE=true && WITH=with
+    check-ping && IS_ONLINE=true && ONLINE=online
     
-    if [[ $BG ]] && ! $IS_ONLINE
+    if ! tty -s && ! $IS_ONLINE
         then
         notify 0 "Waiting $NET_WAIT seconds for Internet..."
         echo "Waiting $NET_WAIT seconds for Internet"
         vibrate 3
         sleep $NET_WAIT
-        check-ping && IS_ONLINE=true
+        check-ping && IS_ONLINE=true && ONLINE=online
         fi
     
+}
+
+run_jobs () {
     if $IS_ONLINE
         then
         notify $JOB "Checking adblock update..."
@@ -84,11 +84,12 @@ finish () {
     notify $JOB "Finishing up..."
     sed -i 1d $DATE_LOG
     echo "$(logdate) IS_ONLINE=$IS_ONLINE" >> $DATE_LOG
-    echo "Daily Jobs completed at $(date +"%l:%M %p") $WITH Internet" > $BUCKET
+    echo "Daily Jobs ran $ONLINE at $(date +"%l:%M %p")" > $BUCKET
     echo -e "daily-jobs $(DONE)"
     echo -en "Releasing wake-lock "
     termux-notification-remove dailyjobs
     termux-wake-unlock
+    sleep 0.1
     DONE
 }
 
@@ -96,4 +97,3 @@ finish () {
 prepare
 run_jobs
 finish
-sleep 0.1
