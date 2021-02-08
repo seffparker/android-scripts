@@ -25,4 +25,4 @@ Usage: start | status | restart | stop
 [2021-02-08 14:39:29 IST] - Watches established.
 ```
 ## Preview
-![status-widget](/doc/images/status-widget.png)
+![status-widget](/doc/images/status-widget.jpg)
