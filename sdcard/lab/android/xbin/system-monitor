@@ -2,7 +2,7 @@
 
 # Report basic system status
 # Author: Seff Parker
-# Version: 20210129 v0.1.0
+# Version: 20210207 v1.0.0
 
 source check-root
 source set-prompt
@@ -16,10 +16,13 @@ INTERVAL=30
 daemon_run () {
     while true
         do
-        LOAD=$(/system/bin/ps -Ao PCPU | awk '{sum += $1; count += 1} END {printf "Load: " "%0.0f%%",sum/8}')
+        CPU_BEGIN=$(awk '/cpu / ' /proc/stat)
         CPU_TEMP=$(awk '{print "CPU: " $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
         BAT_TEMP=$(awk '{print "Bat. " $1/10 "°C"}' /sys/class/power_supply/battery/temp)
         RAM=$(awk '/MemAvailable:/ {printf "RAM: " "%0.0f MB free",$2/1000}' /proc/meminfo)
+        sleep 1
+        CPU_END=$(awk '/cpu / ' /proc/stat)
+        LOAD=$(echo "$CPU_BEGIN $CPU_END" | awk '{printf "Load: " "%0.0f%%",($13+$14+$15-$2-$3-$4)*100/($13+$14+$15+$16-$2-$3-$4-$5)}')
         echo "$LOAD • $RAM • $CPU_TEMP • $BAT_TEMP" | tee $BUCKET
         sleep $INTERVAL
     done
@@ -31,10 +34,13 @@ daemon_start () {
         then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(OK)"
-    else
-        daemon -s -p $PID_FILE -c $0 -a run
+    elif daemon -s -p $PID_FILE -c $0 -a run
+        then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
+    else
+        FAIL
+        CODE=1
     fi
 }
 
@@ -46,6 +52,7 @@ daemon_status () {
         echo "running (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
+        CODE=1
     fi
 }
 
@@ -68,6 +75,7 @@ case $1 in
         daemon_start
         ;;
     run)
+        [[ $2 ]] && INTERVAL=$2
         daemon_run
         ;;
     status)
@@ -82,5 +90,8 @@ case $1 in
         ;;
     *)
         echo "Usage: start | status | restart | stop"
+        CODE=2
         ;;
 esac
+
+exit $CODE
