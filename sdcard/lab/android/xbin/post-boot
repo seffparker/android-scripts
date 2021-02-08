@@ -2,7 +2,7 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20201002
+## Version: 20210207
 
 # Preparing
 source check-root
@@ -10,7 +10,6 @@ source set-dir
 source $ETC/bashrc.root
 source $ETC/hostname
 source $ETC/dns
-export BG=true
 
 BUCKET="$VAR/status-widget/bucket/boot"
 
@@ -72,11 +71,7 @@ echo -n "DNS tweak via $CUSTOM_DNS  "
         echo "[DONE]"
     fi
 
-echo -ne "(Re)starting crond "
-    pkill -9 crond &> /dev/null
-    /data/bin/crond -c $ETC/crontabs
-    echo "(PID: $(pidof crond))  [DONE]"
-    
+crond-service start   
 basic-charging-control start
 system-monitor start
 status-widget start
@@ -87,6 +82,7 @@ setenforce 1
 if [[ "$1" ]]
     then
     termux-notification --content "Boot scripts are completed!" --id post-boot
-    echo "$HOSTNAME ignition at $(date +"%b %e, %a %l:%M %p" -r /storage)" > $BUCKET
+    BTIME=$(awk '/btime/ {print $2}' /proc/stat)
+    echo "$HOSTNAME ignition at $(date +"%b %e, %a %l:%M %p" -d @${BTIME})" > $BUCKET
     vibrate 1
 fi
