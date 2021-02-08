@@ -2,7 +2,7 @@
 
 # Generate plain HTML file from text file
 # Author: Seff Parker
-# Version: 20210203 v1.0.0
+# Version: 20210205 v1.0.1
 
 source check-root
 source set-prompt
@@ -19,7 +19,6 @@ daemon_run () {
     nginx -c $NGX_CONF
     while true
         do
-            inotifywait -e move -e modify -e delete $BUCKET
             echo "Updating widgets"
             echo "<html><body>" > $HTML
             for ITEM in $(ls -t $BUCKET)
@@ -29,6 +28,8 @@ daemon_run () {
                 echo "</p>"
             done >> $HTML
             echo "</body></html>" >> $HTML
+            sleep 1
+            inotifywait -e move -e modify -e delete $BUCKET
     done
 }
 
@@ -38,10 +39,13 @@ daemon_start () {
         then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(OK)"
-    else
-        daemon -s -p $PID_FILE -c $0 -a run
+    elif daemon -s -p $PID_FILE -c $0 -a run
+        then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
+    else
+        FAIL
+        CODE=1
     fi
 }
 
@@ -53,6 +57,7 @@ daemon_status () {
         echo "running (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
+        CODE=1
     fi
 }
 
@@ -90,5 +95,8 @@ case $1 in
         ;;
     *)
         echo "Usage: start | status | restart | stop"
+        CODE=2
         ;;
 esac
+
+exit $CODE
