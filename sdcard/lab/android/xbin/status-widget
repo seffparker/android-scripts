@@ -2,7 +2,7 @@
 
 # Generate plain HTML file from text file
 # Author: Seff Parker
-# Version: 20210205 v1.0.1
+# Version: 20210208 v1.0.2
 
 source check-root
 source set-prompt
@@ -16,6 +16,7 @@ NGX_CONF="$ETC/nginx/status-widget.conf"
 
 daemon_run () {
     exec &> >(logdate)
+    echo "Starting local NGINX server"
     nginx -c $NGX_CONF
     while true
         do
