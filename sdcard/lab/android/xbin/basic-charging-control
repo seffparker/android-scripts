@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 2.0.0 20210203
+# Version: 2.0.2 20210205
 
 source check-root
 source set-dir
@@ -16,7 +16,7 @@ set_cycle () {
     RESUME_LEVEL=$CYCLE_RESUME_LEVEL
     CURRENT_LIMIT=$CYCLE_CURRENT_LIMIT
     BUTTON1_TEXT="Supercharge 🚀"
-    BUTTON1_ACTION="su -c '/system/bin/pkill -l USR2 -f $0'"
+    BUTTON1_ACTION="su -c '/system/bin/pkill -o -l USR2 -f $0'"
     SETTLED=false
     echo "Set to Cyclecharge mode"
 }
@@ -27,7 +27,7 @@ set_super () {
     RESUME_LEVEL=$SUPER_RESUME_LEVEL
     CURRENT_LIMIT=$SUPER_CURRENT_LIMIT
     BUTTON1_TEXT="Cyclecharge ♻️"
-    BUTTON1_ACTION="su -c '/system/bin/pkill -l USR1 -f $0'"
+    BUTTON1_ACTION="su -c '/system/bin/pkill -o -l USR1 -f $0'"
     SETTLED=false
     echo "Set to Supercharge mode"
 }
@@ -110,7 +110,7 @@ while true
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}" \
             --button2 "Hide Status" \
-            --button2-action "su  -c '/system/bin/pkill -l HUP -f $0'"
+            --button2-action "su  -c '/system/bin/pkill -o -l HUP -f $0'"
         fi
         
         if [[ $TEMP -ge $PAUSE_TEMP ]] && ! $IS_PAUSED
@@ -185,7 +185,7 @@ while true
         while grep -qw $STATE $INPUT_STATE && [[ $LEVEL -ge $RESUME_LEVEL ]]
             do # not charging
             sleep $SLEEP_SHORT
-            inotifywait -qq ee close $INPUT_STATE
+            inotifywait -qq -e close $INPUT_STATE
             LEVEL=$(cat $LEVEL_FILE)
         done
         
@@ -214,10 +214,13 @@ daemon_start () {
         then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(OK)"
-    else
-        daemon -s -p $PID_FILE -c $0 -a run
+    elif daemon -s -p $PID_FILE -c $0 -a run
+        then
         PID=$(cat $PID_FILE)
         echo "(PID: $PID) $(DONE)"
+    else
+        FAIL
+        CODE=1
     fi
 }
 
@@ -229,6 +232,7 @@ daemon_status () {
         echo "running (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
+        CODE=1
     fi
 }
 
@@ -267,5 +271,8 @@ case $1 in
         ;;
     *)
         echo "Usage: start | status | restart | stop"
+        CODE=2
         ;;
 esac
+
+exit $CODE
