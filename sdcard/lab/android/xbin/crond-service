@@ -1,0 +1,86 @@
+#!/data/bin/bash
+
+# Manage crond daemon
+# Author: Seff Parker
+# Version: 1.0.0 20210205
+
+source check-root
+source set-prompt
+source set-dir
+
+APP_NAME="Crond Service"
+APP_ID="crond-service"
+PID_FILE="$RUN/${APP_ID}.pid"
+CONF="$ETC/crontabs"
+
+daemon_run () {
+    exec &> >(logdate)
+    /data/bin/crond -f -l 0 -c $CONF
+}
+
+daemon_start () {
+    echo -n "Starting ${APP_NAME} "
+    if daemon -t -p $PID_FILE -c $0
+        then
+        PID=$(cat $PID_FILE)
+        echo "(PID: $PID) $(OK)"
+    elif daemon -s -p $PID_FILE -c $0 -a run
+        then
+        PID=$(cat $PID_FILE)
+        echo "(PID: $PID) $(DONE)"
+    else
+        FAIL
+        CODE=1
+    fi
+}
+
+daemon_status () {
+    echo -n "${APP_NAME} is "
+    if daemon -t -p $PID_FILE -c $0
+        then
+        PID=$(cat $PID_FILE)
+        echo "running (PID: $PID) $(OK)"
+    else
+        echo "not running $(FAIL)"
+        CODE=1
+    fi
+}
+
+daemon_stop () {
+    PID=$(cat $PID_FILE 2> /dev/null)
+    echo -n "Stopping ${APP_NAME} "
+    if daemon -k -p $PID_FILE -c $0
+        then
+        rm -f $PID_FILE
+        echo "(PID: $PID) $(DONE)"
+    else
+        OK
+    fi
+}
+
+# main ()
+
+case $1 in
+    start)
+        daemon_start
+        ;;
+    run)
+        daemon_run
+        ;;
+    status)
+        daemon_status
+        ;;
+    restart)
+        daemon_stop
+        daemon_start
+        ;;
+    stop)
+        daemon_stop
+        ;;
+    *)
+        echo "Usage: start | status | restart | stop"
+        CODE=2
+        ;;
+esac
+
+exit $CODE
