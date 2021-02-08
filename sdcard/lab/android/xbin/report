@@ -2,7 +2,7 @@
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20210110
+## Version: 20210205
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir
@@ -23,19 +23,17 @@ date -r /data/data/com.termux/files/usr/var/log/apt/history.log 2> /dev/null || 
 echo -ne "Adblock database date:\t"
 date -d "$(grep '# Date:' /etc/hosts | cut -d' ' -f3-7)" 2> /dev/null || echo UNKNOWN
 
-echo -ne "crond service status:\t"
-pgrep crond &> /dev/null && echo "RUNNING (PID: $(pidof crond))" || echo STOPPED
+echo -ne "Crond Service status:\t"
+crond-service status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/crond-service.pid))" || echo STOPPED
 
 echo -ne "BCC service status:\t"
-pgrep -f basic-charging-control &> /dev/null && echo "RUNNING (PID: $(cat $RUN/bcc.pid))" || echo STOPPED
+basic-charging-control status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/bcc.pid))" || echo STOPPED
 
 echo -ne "System Monitor daemon:\t"
-pgrep -f system-monitor &> /dev/null && echo "RUNNING (PID: $(cat $RUN/system-monitor.pid))" || echo STOPPED
+system-monitor status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/system-monitor.pid))" || echo STOPPED
 
 echo -ne "Status Widget daemon:\t"
-pgrep -f status-widget &> /dev/null && echo "RUNNING (PID: $(cat $RUN/status-widget.pid))" || echo STOPPED
-
-
+status-widget status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/status-widget.pid))" || echo STOPPED
 
 echo -ne "Load average:\t\t"
 cat /proc/loadavg | cut -d' ' -f1-3
