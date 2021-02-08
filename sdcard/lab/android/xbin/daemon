@@ -2,7 +2,7 @@
 
 # Manage script daemons using start-stop-daemon
 # Author: Seff Parker
-# Version: 0.0.1 20210124
+# Version: 0.0.1 20210205
 
 print_usage () {
     echo "Usage: $(basename $0) -[skt] -p PID_FILE -c COMMAND [-a ARGS]"
@@ -25,6 +25,7 @@ daemon_check () {
 
 daemon_start () {
     start-stop-daemon -S -m -p $PID_FILE -b $CMD -- $ARGS
+    daemon_check
     return $?
 }
 
@@ -67,14 +68,13 @@ validate_args
 case ${MODE} in
     status)
         daemon_check
-        exit $?
         ;;
     start)
         daemon_check || daemon_start
-        exit $?
         ;;
     stop)
         daemon_check && daemon_stop
-        exit $?
         ;;
 esac
+
+exit $?
