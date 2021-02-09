@@ -3,7 +3,7 @@ Limit charging current and level to increase the efficiency and lifespan of batt
 
 **Cyclecharge mode:** The charging current will be limited according to the charger voltage. The charging will be stopped at the given LEVEL_MAX, and charging will not be allowed until the battery drained to LEVEL_MIN
 
-**Supercharge mode:** Charge at the maximum current supported by the charger.See `bcc.conf` for additional configuration.
+**Supercharge mode:** Charge at the maximum current supported by the charger.
 
 See [bcc.conf](https://github.com/seffparker/android-scripts/blob/master/sdcard/lab/android/etc/bcc.conf) for additional configuration.
 
