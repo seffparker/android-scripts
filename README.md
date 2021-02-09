@@ -10,10 +10,16 @@ These scripts are wrote to make my personal Android experience easier and produc
 - **Features:** System-less, SELinux Support
 
 ## Deployment
- 1. Clone the repository
- 2. Switch as root user
- 3. `cd` into the repo root dir
- 4. Run `sh deploy-stack.sh`
+1. Clone the repository
+1. Switch as root user
+1. `cd` into the repo root dir
+1. Run `sh deploy-stack.sh`
+
+## Spotlights
+1. [Basic Charging Control](https://github.com/seffparker/android-scripts/blob/master/doc/basic-charging-control.md)
+1. [Status Widget](https://github.com/seffparker/android-scripts/blob/master/doc/status-widget.md)
+1. [Audio Sleep](https://github.com/seffparker/android-scripts/blob/master/doc/audio-sleep.md)
+1. [Ad block](https://github.com/seffparker/android-scripts/blob/master/doc/adblock.md)
 
 ## Disclaimer
 Not all scripts may be useful to you. I'm not responsible for anything happens to your device or data after using these scripts.
