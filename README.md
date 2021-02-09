@@ -5,7 +5,7 @@ These scripts are wrote to make my personal Android experience easier and produc
 - **Device:** Xiaomi POCO F1
 - **OS:** Android 9 / MIUI 11
 - **Terminal:** Termux, Termux:API
-- **Shell:** [BASH 5.0.18](https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/blob/master/bash/bash-arm64)
+- **Shell:** [BASH 5](https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/blob/master/bash/bash-arm64)
 - **Root:** Magisk
 - **Features:** System-less, SELinux Support
 
