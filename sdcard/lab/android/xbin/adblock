@@ -2,7 +2,7 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 20201223
+## Version: 3.0.0 20210211
 
 source check-root
 source set-dir
@@ -14,6 +14,7 @@ SYS_HOSTS="/data/adb/modules/batmobile-mods/system/etc/hosts"
 UPDATED=false
 CURL="/system/bin/curl"
 BUCKET="$VAR/status-widget/bucket/adblock"
+HOSTSD="$ETC/hosts.d"
 
 is_enabled () {
     if head -10 $SYS_HOSTS | grep -q ${STRING}
@@ -28,7 +29,7 @@ enable_adblock () {
     echo -n "Enabling Adblock "
     if ! is_enabled &> /dev/null
     then
-        cat $ETC/hosts.final > $SYS_HOSTS
+        cat $HOSTSD/hosts.final > $SYS_HOSTS
         DONE
     else
         OK
@@ -39,7 +40,7 @@ disable_adblock () {
     echo -n "Disabling Adblock "
     if is_enabled &> /dev/null
     then
-        cat $ETC/hosts.disabled > $SYS_HOSTS
+        cat $HOSTSD/hosts.disabled > $SYS_HOSTS
         DONE
     else
         OK
@@ -66,20 +67,20 @@ check () {
 download () {
     echo -ne "Downloading update "
     PREV_RECORDS=$(cat $VAR/hosts.comm_records)
-    if $CURL --insecure -s ${HOSTS_URL} -o $ETC/hosts.comm.tmp
+    if $CURL --insecure -s ${HOSTS_URL} -o $HOSTSD/hosts.comm.tmp
     then
-        mv -f $ETC/hosts.comm.tmp $ETC/hosts.comm
+        mv -f $HOSTSD/hosts.comm.tmp $HOSTSD/hosts.comm
         echo -n $NEW_BYTES > $VAR/hosts.comm_bytes
-        CUR_RECORDS=$(grep -c ^0 $ETC/hosts.comm)
+        CUR_RECORDS=$(grep -c ^0 $HOSTSD/hosts.comm)
         echo $CUR_RECORDS > $VAR/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
-        echo -e "Database version: $(grep  "# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
+        echo -e "Database version: $(grep  "# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
         echo "Adblock hosts updated on $(date +%F)" > $BUCKET
         UPDATED=true
         DONE
     else
         FAIL
-        rm -f $ETC/hosts.comm.tmp
+        rm -f $HOSTSD/hosts.comm.tmp
         return 1
     fi
  }
@@ -88,7 +89,7 @@ apply () {
     echo -ne "Updating user entries "
     if ! md5sum -c $VAR/hosts.user_md5 &> /dev/null
         then UPDATED=true
-        md5sum $ETC/hosts.user > $VAR/hosts.user_md5
+        md5sum $HOSTSD/hosts.user > $VAR/hosts.user_md5
         UPDATED
     else
         OK
@@ -97,7 +98,7 @@ apply () {
     echo -en "Updating excludes "
     if ! md5sum -c $VAR/hosts.excludes_md5 &> /dev/null
         then UPDATED=true
-        md5sum $ETC/hosts.excludes > $VAR/hosts.excludes_md5
+        md5sum $HOSTSD/hosts.excludes > $VAR/hosts.excludes_md5
         UPDATED
     else
         OK
@@ -106,19 +107,19 @@ apply () {
     echo -en "Rebuilding hosts file "
     if $UPDATED
         then
-        cp -f $ETC/hosts.comm $ETC/hosts.final
-        cat $ETC/hosts.user >> $ETC/hosts.final
+        cp -f $HOSTSD/hosts.comm $HOSTSD/hosts.final
+        cat $HOSTSD/hosts.user >> $HOSTSD/hosts.final
         
-        for EXCLUDE in $(cat $ETC/hosts.excludes | sed 's/#.*//g')
+        for EXCLUDE in $(cat $HOSTSD/hosts.excludes | sed 's/#.*//g')
             do
-            sed -i "/$EXCLUDE/d" $ETC/hosts.final
+            sed -i "/$EXCLUDE/d" $HOSTSD/hosts.final
         done
-        cat $ETC/hosts.final > $SYS_HOSTS
+        cat $HOSTSD/hosts.final > $SYS_HOSTS
         DONE
-        echo -e "Community update: $(grep  "^# Date:" $ETC/hosts.comm | cut -d' ' -f3-5)"
-        echo -e "Community entries:$(grep  "^# Number of unique domains" $ETC/hosts.comm | cut -d':' -f2)"
+        echo -e "Community update: $(grep  "^# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)"
+        echo -e "Community entries:$(grep  "^# Number of unique domains" $HOSTSD/hosts.comm | cut -d':' -f2)"
         
-        USER_REC=$(grep -c ^0 $ETC/hosts.user)
+        USER_REC=$(grep -c ^0 $HOSTSD/hosts.user)
         echo -e "User entries: $USER_REC"
         echo "Updating Adblock $(DONE)"
     else
