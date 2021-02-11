@@ -32,6 +32,7 @@ daemon_run () {
             sleep 1
             inotifywait -e move -e modify -e delete $BUCKET
     done
+    echo done
 }
 
 daemon_start () {
@@ -66,6 +67,7 @@ daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping ${APP_NAME} "
     nginx -s stop -c $NGX_CONF
+    rm -f $HTML
     if daemon -k -p $PID_FILE -c $0
         then
         rm -f $PID_FILE
