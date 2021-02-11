@@ -2,7 +2,7 @@
 
 # Report basic system status
 # Author: Seff Parker
-# Version: 20210207 v1.0.0
+# Version: 20210209 v1.1.0
 
 source check-root
 source set-prompt
@@ -17,13 +17,19 @@ daemon_run () {
     while true
         do
         CPU_BEGIN=$(awk '/cpu / ' /proc/stat)
-        CPU_TEMP=$(awk '{print "CPU: " $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
-        BAT_TEMP=$(awk '{print "Bat. " $1/10 "°C"}' /sys/class/power_supply/battery/temp)
+        BC_BEGIN=$(echo $CPU_BEGIN | wc -c)
+        CPU_TEMP=$(awk '{print $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
+        BAT_LEVEL=$(awk '{print "Bat. " $0 "%,"}' /sys/class/power_supply/battery/capacity)
+        BAT_TEMP=$(awk '{print $1/10 "°C"}' /sys/class/power_supply/battery/temp)
         RAM=$(awk '/MemAvailable:/ {printf "RAM: " "%0.0f MB free",$2/1000}' /proc/meminfo)
         sleep 1
         CPU_END=$(awk '/cpu / ' /proc/stat)
-        LOAD=$(echo "$CPU_BEGIN $CPU_END" | awk '{printf "Load: " "%0.0f%%",($13+$14+$15-$2-$3-$4)*100/($13+$14+$15+$16-$2-$3-$4-$5)}')
-        echo "$LOAD • $RAM • $CPU_TEMP • $BAT_TEMP" | tee $BUCKET
+        BC_END=$(echo $CPU_END | wc -c)
+        if [[ $BC_BEGIN -le $BC_END ]]
+            then
+            LOAD=$(echo "$CPU_BEGIN $CPU_END" | awk '{printf "CPU: " "%0.1f%%,",($13+$14+$15-$2-$3-$4)*100/($13+$14+$15+$16-$2-$3-$4-$5)}')
+        fi
+        echo "$LOAD $CPU_TEMP • $RAM • $BAT_LEVEL $BAT_TEMP" | tee $BUCKET
         sleep $INTERVAL
     done
 }
