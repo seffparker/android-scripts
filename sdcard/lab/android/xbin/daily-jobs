@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 20210205
+## Version: 2.0.1 20210209
 
 source check-root
 source set-dir
@@ -60,8 +60,12 @@ run_jobs () {
         adblock update
     fi
     ((JOB++))
-    
-    $IS_ONLINE && apk-update -u
+
+    if $IS_ONLINE
+        then
+        notify $JOB "Checking APK updates..."
+        apk-update -u
+    fi
     ((JOB++))
     
     notify $JOB "Optimizing memory & cache..."
