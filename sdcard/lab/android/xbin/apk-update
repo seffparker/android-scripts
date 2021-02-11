@@ -2,13 +2,13 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 20210130
+## Version: 1.0.1 20210209
 
 source set-dir
 source set-prompt
 
 CONFD="$ETC/apk-update"
-APK_PATH="/sdcard/Backups/apps"
+APK_DIR="/sdcard/Backups/apps"
 TMP="/data/local/tmp/"
 
 read_conf () {
@@ -18,18 +18,19 @@ read_conf () {
 }
 
 checkUpdate () {
-    echo -n "Checking ${PKG_NAME} update "
+    echo -n "Checking ${APP_NAME} update "
     APK_URL_OLD=$(cat $APK_URL 2> /dev/null)
     APK_URL_NEW=$(/system/bin/curl -sk --connect-timeout 5 -m 10 $ASSET_URL | grep -o "$PATTERN" | head -1)
     if [[ "$APK_URL_NEW" == "$APK_URL_OLD" ]]
         then OK
+        rm -f $BUCKET
         return 2
     elif [[ -z $APK_URL_NEW ]]
         then FAIL
         return 1
     else
         APK_NAME=$(basename $APK_URL_NEW)
-        termux-notification --title "${PKG_NAME} update available" --content "$APK_NAME" --id $PKG_ID
+        termux-notification --title "${APP_NAME} update available" --content "$APK_NAME" --id $PKG_ID
         UPDATED
         return 0
     fi
@@ -38,23 +39,23 @@ checkUpdate () {
 installUpdate () {
     PKG_VERSION_CURR=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
     echo "Current version: $PKG_VERSION_CURR"
-    echo "Downloading $PKG_NAME update..."
-    echo $APK_PATH/$APK_NAME
-    wget -c -t 0 -T 10 $APK_URL_NEW -O $APK_PATH/$APK_NAME
-    echo "Updating ${PKG_NAME} $(BEGIN)"
-    cp -f $APK_PATH/$APK_NAME $TMP/
+    echo "Downloading $APP_NAME update..."
+    echo $APK_DIR/$APK_NAME
+    wget -c -t 0 -T 10 $APK_URL_NEW -O $APK_DIR/$APK_NAME
+    echo "Updating ${APP_NAME} $(BEGIN)"
+    cp -f $APK_DIR/$APK_NAME $TMP/
     if pm install -f $TMP/$APK_NAME
         then
         echo $APK_URL_NEW > $APK_URL
         PKG_VERSION_NEW=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
-        termux-notification --title "${PKG_NAME} is successfully updated" \
+        termux-notification --title "${APP_NAME} is successfully updated" \
         --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID
         echo "Updated version: $PKG_VERSION_NEW"
-        echo "$PKG_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
-        echo "Updating ${PKG_NAME} $(DONE)"
+        echo "$APP_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
+        echo "Updating ${APP_NAME} $(DONE)"
     else
-        termux-notification --title "${PKG_NAME} update failed" --id $PKG_ID
-        echo "Updating ${PKG_NAME} $(FAIL)"
+        termux-notification --title "${APP_NAME} update failed" --id $PKG_ID
+        echo "Updating ${APP_NAME} $(FAIL)"
     fi
     rm -f $TMP/$APK_NAME
 }
