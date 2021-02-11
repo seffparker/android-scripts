@@ -2,14 +2,15 @@
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20210205
+## Version: 20210209
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir
 source termux-env
 
 echo -ne "$HOSTNAME engine start:\t"
-date -r /storage 2> /dev/null || echo UNKNOWN
+BTIME=$(awk '/btime/ {print $2}' /proc/stat)
+date -d @${BTIME} 2> /dev/null || echo UNKNOWN
 
 echo -ne "Last run of post-boot:\t"
 date -r $LOG/post-boot.history 2> /dev/null || echo UNKNOWN
