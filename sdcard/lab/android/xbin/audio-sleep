@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 20210123
+## Version: 4.0.1 20210214
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
@@ -20,12 +20,12 @@ daemon_run () {
     do
         logdate "DEBUG: $MIN minutes left to sleep"
         echo -n ${MIN} > ${STATUS}
-        termux-notification --alert-once --ongoing --id audio-sleep \
+        timeout 1 termux-notification --alert-once --ongoing --id audio-sleep \
         -t "Audio player will stop in $MIN minutes" \
         --button1 "Extend ${EXTEND}m" \
         --button1-action "su -c '$0 +${EXTEND}'"\
         --button2 "Abort" \
-        --button2-action "su -c '$0 0'" &
+        --button2-action "su -c '$0 0'"
         sleep 60
     done
     echo -n 0 > ${STATUS}

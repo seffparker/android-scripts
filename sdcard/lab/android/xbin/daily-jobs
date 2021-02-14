@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 2.0.1 20210209
+## Version: 2.1.0 20210215
 
 source check-root
 source set-dir
@@ -20,7 +20,7 @@ N=6 # Total no. of jobs
 
 # functions
 notify () {
-    termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
+    timeout 1 termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
 }
 
 prepare () {
