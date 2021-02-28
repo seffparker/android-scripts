@@ -1,0 +1,14 @@
+#!/data/bin/bash
+
+# Wait till the display is on
+# Author: Seff Parker
+# Version: v0.0.1 20210224
+
+BRIGHTNESS_FILE="/sys/class/backlight/panel0-backlight/brightness"
+
+BRIGHTNESS=$(cat $BRIGHTNESS_FILE)
+if [[ $BRIGHTNESS -eq 0 ]]
+    then echo "Screen is off, waiting..."
+    inotifywait -qq -e modify $BRIGHTNESS_FILE
+    echo "Screen is ON"
+fi
