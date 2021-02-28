@@ -6,7 +6,7 @@ These scripts are wrote to make my personal Android experience easier and produc
 - **OS:** Android 9 / MIUI 11
 - **Terminal:** Termux, Termux:API
 - **Shell:** [BASH 5](https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/blob/master/bash/bash-arm64)
-- **Root:** Magisk
+- **Root:** Magisk 22 (with SEPolicy inject)
 - **Features:** System-less, SELinux Support
 
 ## Deployment
