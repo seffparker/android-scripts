@@ -2,7 +2,7 @@
 
 # Manage script daemons using start-stop-daemon
 # Author: Seff Parker
-# Version: 0.0.1 20210205
+# Version: 1.0.0 20210217
 
 print_usage () {
     echo "Usage: $(basename $0) -[skt] -p PID_FILE -c COMMAND [-a ARGS]"
@@ -30,10 +30,9 @@ daemon_start () {
 }
 
 daemon_stop () {
-    if PID=$(cat $PID_FILE 2> /dev/null)
-        then busybox pkill -9 -P $PID &> /dev/null
-        start-stop-daemon -Kq -p $PID_FILE -s 9
-    fi
+    busybox pkill -9 -P $PID &> /dev/null
+    start-stop-daemon -Kq -p $PID_FILE -s 9 &> /dev/null
+    daemon_check && false || true
     return $?
 }
 

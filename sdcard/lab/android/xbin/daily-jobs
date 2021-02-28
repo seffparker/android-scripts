@@ -20,7 +20,7 @@ N=6 # Total no. of jobs
 
 # functions
 notify () {
-    timeout 1 termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
+    timeout 2 termux-notification --ongoing --id dailyjobs --title "Running daily jobs: $1/$N" --content "$2"
 }
 
 prepare () {

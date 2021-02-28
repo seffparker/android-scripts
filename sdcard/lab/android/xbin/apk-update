@@ -2,7 +2,7 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 1.0.1 20210209
+## Version: 2.0.0 20210225
 
 source set-dir
 source set-prompt
@@ -13,7 +13,7 @@ TMP="/data/local/tmp/"
 
 read_conf () {
     source $1
-    APK_URL="$VAR/$PKG_ID.url"
+    APK_URL="$VAR/apk-update/$PKG_ID.url"
     BUCKET="$VAR/status-widget/bucket/apk-update_${PKG_ID}"
 }
 
@@ -44,7 +44,7 @@ installUpdate () {
     wget -c -t 0 -T 10 $APK_URL_NEW -O $APK_DIR/$APK_NAME
     echo "Updating ${APP_NAME} $(BEGIN)"
     cp -f $APK_DIR/$APK_NAME $TMP/
-    if pm install -f $TMP/$APK_NAME
+    if pm install --dont-kill -f $TMP/$APK_NAME
         then
         echo $APK_URL_NEW > $APK_URL
         PKG_VERSION_NEW=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
@@ -54,7 +54,7 @@ installUpdate () {
         echo "$APP_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
         echo "Updating ${APP_NAME} $(DONE)"
     else
-        termux-notification --title "${APP_NAME} update failed" --id $PKG_ID
+        termux-notification --title "${APP_NAME} update failed" --content "$APK_NAME" --id $PKG_ID
         echo "Updating ${APP_NAME} $(FAIL)"
     fi
     rm -f $TMP/$APK_NAME

@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 4.0.1 20210214
+## Version: 4.1.0 20210214
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
@@ -15,12 +15,13 @@ EXTEND=30
 [[ -f $ETC/audio-sleep.conf ]] && source $ETC/audio-sleep.conf
 
 daemon_run () {
+    tty -s && exec &> >(logdate)
     termux-wake-lock
     for ((MIN=$1; MIN > 0; MIN--))
     do
-        logdate "DEBUG: $MIN minutes left to sleep"
+        echo "$MIN minutes left to sleep"
         echo -n ${MIN} > ${STATUS}
-        timeout 1 termux-notification --alert-once --ongoing --id audio-sleep \
+        termux-notification --alert-once --ongoing --id audio-sleep \
         -t "Audio player will stop in $MIN minutes" \
         --button1 "Extend ${EXTEND}m" \
         --button1-action "su -c '$0 +${EXTEND}'"\
@@ -33,24 +34,26 @@ daemon_run () {
         --ongoing --id audio-sleep \
         --button1 "Extend ${EXTEND}m" \
         --button1-action "su -c '$0 ${EXTEND}'"
-    echo "DEBUG: Audio player is being stopped" 
+    echo "Audio player is being stopped" 
     ORG_VOL=$(termux-volume | awk '/music/ {getline; print $2+0}')
     for VOL in $(seq $ORG_VOL | sort -nr)
         do
         termux-volume music $VOL
-        logdate "DEBUG: Current volume is $VOL"
+        echo "Current volume is $VOL"
         sleep 10
         done
+    echo "Sending event to stop media"
     input keyevent 86 # stop media
-    logdate "DEBUG: Restoring volume back to $ORG_VOL"
+    echo "Restoring volume back to $ORG_VOL"
     termux-volume music $ORG_VOL # restore volume
+    echo "Turning off Bluetooth and Internet"
     /system/bin/svc bluetooth disable
     /system/bin/svc data disable
     /system/bin/svc wifi disable
     rm -fv $PID_FILE $STATUS
     termux-notification-remove audio-sleep
     termux-wake-unlock
-    logdate "DEBUG: Exiting"
+    echo "Exiting cleanly"
 }
 
 print_usage () {
@@ -73,6 +76,7 @@ daemon_stop () {
         rm -f $STATUS $PID_FILE
         DONE
     else
+        rm -f $STATUS $PID_FILE
         termux-notification-remove audio-sleep
         OK
     fi
@@ -80,8 +84,12 @@ daemon_stop () {
 
 daemon_start () {
     echo -ne "Setting sleep timer to $1 minutes "
-    daemon -s -p $PID_FILE -c $0 -a "run $1"
-    DONE
+    if daemon -s -p $PID_FILE -c $0 -a "run $1"
+        then
+        DONE
+    else
+        FAIL
+    fi
 }
 
 case $1 in

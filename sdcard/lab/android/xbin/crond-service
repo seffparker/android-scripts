@@ -14,8 +14,7 @@ PID_FILE="$RUN/${APP_ID}.pid"
 CONF="$ETC/crontabs"
 
 daemon_run () {
-    exec &> >(logdate)
-    /data/bin/crond -f -l 0 -c $CONF
+    /data/bin/crond -f -c $CONF
 }
 
 daemon_start () {

@@ -2,7 +2,7 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 3.0.0 20210211
+## Version: 3.1.0 20210225
 
 source check-root
 source set-dir
@@ -13,8 +13,9 @@ STRING="StevenBlack"
 SYS_HOSTS="/data/adb/modules/batmobile-mods/system/etc/hosts"
 UPDATED=false
 CURL="/system/bin/curl"
-BUCKET="$VAR/status-widget/bucket/adblock"
+BUCKET="${VAR}/status-widget/bucket/adblock"
 HOSTSD="$ETC/hosts.d"
+HOSTSV="$VAR/adblock"
 
 is_enabled () {
     if head -10 $SYS_HOSTS | grep -q ${STRING}
@@ -49,30 +50,30 @@ disable_adblock () {
 
 check () {
     echo -n "Checking for Adblock update "
-    CUR_BYTES=$(cat $VAR/hosts.comm_bytes)
+    CUR_BYTES=$(cat ${HOSTSV}/hosts.comm_bytes)
     NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${HOSTS_URL}  | busybox awk 'BEGIN{IGNORECASE=1} /Content-Length/ {printf $2}')
     if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
         then OK
-        date > $VAR/adblock-update.last_checked
+        date > ${HOSTSV}/adblock-update.last_checked
         return 2
     elif [ -z "$NEW_BYTES" ]
         then FAIL
         return 1
     else
-        date > $VAR/adblock-update.last_checked
+        date > ${HOSTSV}/adblock-update.last_checked
         UPDATED
     fi
 }
   
 download () {
     echo -ne "Downloading update "
-    PREV_RECORDS=$(cat $VAR/hosts.comm_records)
+    PREV_RECORDS=$(cat ${HOSTSV}/hosts.comm_records)
     if $CURL --insecure -s ${HOSTS_URL} -o $HOSTSD/hosts.comm.tmp
     then
         mv -f $HOSTSD/hosts.comm.tmp $HOSTSD/hosts.comm
-        echo -n $NEW_BYTES > $VAR/hosts.comm_bytes
+        echo -n $NEW_BYTES > ${HOSTSV}/hosts.comm_bytes
         CUR_RECORDS=$(grep -c ^0 $HOSTSD/hosts.comm)
-        echo $CUR_RECORDS > $VAR/hosts.comm_records
+        echo $CUR_RECORDS > ${HOSTSV}/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
         echo -e "Database version: $(grep  "# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
         echo "Adblock hosts updated on $(date +%F)" > $BUCKET
@@ -87,18 +88,18 @@ download () {
 
 apply () { 
     echo -ne "Updating user entries "
-    if ! md5sum -c $VAR/hosts.user_md5 &> /dev/null
+    if ! md5sum -c ${HOSTSV}/hosts.user_md5 &> /dev/null
         then UPDATED=true
-        md5sum $HOSTSD/hosts.user > $VAR/hosts.user_md5
+        md5sum $HOSTSD/hosts.user > ${HOSTSV}/hosts.user_md5
         UPDATED
     else
         OK
     fi
     
     echo -en "Updating excludes "
-    if ! md5sum -c $VAR/hosts.excludes_md5 &> /dev/null
+    if ! md5sum -c ${HOSTSV}/hosts.excludes_md5 &> /dev/null
         then UPDATED=true
-        md5sum $HOSTSD/hosts.excludes > $VAR/hosts.excludes_md5
+        md5sum $HOSTSD/hosts.excludes > ${HOSTSV}/hosts.excludes_md5
         UPDATED
     else
         OK

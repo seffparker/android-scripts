@@ -11,26 +11,28 @@ source set-dir
 APP_NAME="Status Widget"
 PID_FILE="$RUN/status-widget.pid"
 BUCKET="$VAR/status-widget/bucket"
-HTML="$VAR/status-widget/html/status-widget"
+HTML_FILE="$VAR/status-widget/html/status-widget"
 NGX_CONF="$ETC/nginx/status-widget.conf"
 
 daemon_run () {
-    exec &> >(logdate)
+    tty -s && exec &> >(logdate)
     echo "Starting local NGINX server"
     nginx -c $NGX_CONF
     while true
         do
             echo "Updating widgets"
-            echo "<html><body>" > $HTML
-            for ITEM in $(ls -t $BUCKET)
+            HTML_CODE="<html><body>"
+            HTML_CODE+=$(for ITEM in $(ls -t $BUCKET)
                 do
                 echo "<p>"
                 cat $BUCKET/$ITEM
                 echo "</p>"
-            done >> $HTML
-            echo "</body></html>" >> $HTML
-            sleep 1
+            done)
+            HTML_CODE+="</body></html>"
+            echo $HTML_CODE > $HTML_FILE
             inotifywait -e move -e modify -e delete $BUCKET
+            wait-for-display
+            sleep 1
     done
     echo done
 }
