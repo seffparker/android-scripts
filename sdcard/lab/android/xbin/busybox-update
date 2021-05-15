@@ -1,0 +1,72 @@
+#!/data/bin/bash
+
+## Update busybox compiled by osm0sis
+## Author: Seff P
+## Version: 1.0.0 20210515
+
+source check-root
+source set-dir
+source set-prompt
+
+BIN_DN="Busybox"
+BIN_NAME="busybox"
+BIN_URL="https://raw.githubusercontent.com/Magisk-Modules-Repo/busybox-ndk/master/busybox-arm64-selinux"
+INSTALL_DIR="/data/bin"
+UPDATED=false
+CURL="/system/bin/curl"
+BUCKET="${VAR}/status-widget/bucket/${BIN_NAME}"
+
+check () {
+    echo -n "Checking for ${BIN_DN} update "
+    CUR_BYTES=$(cat ${VAR}/${BIN_NAME}_bytes)
+    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${BIN_URL}  | busybox awk 'BEGIN{IGNORECASE=1} /Content-Length/ {printf $2}')
+    if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
+        then OK
+        date > ${VAR}/${BIN_NAME}-update.last_checked
+        return 2
+    elif [ -z "$NEW_BYTES" ]
+        then FAIL
+        return 1
+    else
+        date > ${VAR}/${BIN_NAME}-update.last_checked
+        UPDATED
+    fi
+}
+  
+download () {
+    echo -ne "Downloading update "
+    if $CURL --insecure -s ${BIN_URL} -o $BIN/${BIN_NAME}.tmp
+    then
+        mv -f $BIN/${BIN_NAME}.tmp $BIN/${BIN_NAME}
+        echo -n $NEW_BYTES > ${VAR}/${BIN_NAME}_bytes
+        UPDATED=true
+        DONE
+    else
+        FAIL
+        rm -f $BIN/${BIN_NAME}.tmp
+        return 1
+    fi
+ }
+
+apply () { 
+    if $UPDATED
+        then
+        cp -f $BIN/${BIN_NAME} $INSTALL_DIR/
+        /system/bin/chmod +x $INSTALL_DIR/${BIN_NAME}
+        $INSTALL_DIR/busybox --install -s $INSTALL_DIR
+        NEW_VER=$($INSTALL_DIR/busybox | awk '{print $2; exit}')
+        echo "${BIN_DN} updated to $NEW_VER on $(date +%F)" > $BUCKET
+        echo "Updating ${BIN_DN} to $NEW_VER $(DONE)"
+    else
+        SKIP
+    fi
+}
+
+case $1 in
+ "")
+    check && download && apply
+    ;;
+ *)
+    echo "Download and install latest ${BIN_DN}"
+    ;;
+esac

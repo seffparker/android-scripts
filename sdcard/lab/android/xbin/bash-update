@@ -1,0 +1,65 @@
+#!/data/bin/bash
+
+## Update bash compiled by Zackpkg5
+## Author: Seff P
+## Version: 1.0.0 20210515
+
+source check-root
+source set-dir
+source set-prompt
+
+APP_DN="BASH"
+APP_NAME="bash"
+APP_URL="https://raw.githubusercontent.com/Zackptg5/Cross-Compiled-Binaries-Android/master/bash/bash-arm64"
+INSTALL_DIR="/data/bin"
+UPDATED=false
+CURL="/system/bin/curl"
+BUCKET="${VAR}/status-widget/bucket/${APP_NAME}"
+
+check () {
+    echo -n "Checking for ${APP_DN} update "
+    CUR_BYTES=$(cat ${VAR}/${APP_NAME}_bytes)
+    NEW_BYTES=$($CURL -Is --insecure --connect-timeout 5 ${APP_URL}  | busybox awk 'BEGIN{IGNORECASE=1} /Content-Length/ {printf $2}')
+    if [[ "$CUR_BYTES" == "$NEW_BYTES" ]]
+        then OK
+        date > ${VAR}/${APP_NAME}-update.last_checked
+        return 2
+    elif [ -z "$NEW_BYTES" ]
+        then FAIL
+        return 1
+    else
+        date > ${VAR}/${APP_NAME}-update.last_checked
+        UPDATED
+    fi
+}
+  
+download () {
+    echo -ne "Downloading update "
+    if $CURL --insecure -s ${APP_URL} -o $BIN/${APP_NAME}.tmp
+    then
+        mv -f $BIN/${APP_NAME}.tmp $BIN/${APP_NAME}
+        echo -n $NEW_BYTES > ${VAR}/${APP_NAME}_bytes
+        DONE
+    else
+        FAIL
+        rm -f $BIN/${APP_NAME}.tmp
+        return 1
+    fi
+ }
+
+apply () { 
+    cp -f $BIN/${APP_NAME} $INSTALL_DIR/
+    /system/bin/chmod +x $INSTALL_DIR/${APP_NAME}
+    NEW_VER=$($INSTALL_DIR/bash --version | awk '{print $4; exit}')
+    echo "${APP_DN} updated to $NEW_VER on $(date +%F)" > $BUCKET
+    echo "Updating ${APP_DN} to $NEW_VER $(DONE)"
+}
+
+case $1 in
+ "")
+    check && download && apply
+    ;;
+ *)
+    echo "Download and install latest ${APP_DN}"
+    ;;
+esac
