@@ -1,6 +1,6 @@
 # Set styles for common status outputs
 
-if tty -s ; then
+if /system/bin/tty -s ; then
     R='\e[01;31m'
     G='\e[01;32m'
     Y='\e[01;33m'

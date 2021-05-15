@@ -6,10 +6,10 @@ source check-root
 source set-prompt
 
 echo -n "Cleaning termux-api processes "
-if COUNT=$(pgrep -l -f files/usr/.*/termux- 2> /dev/null | grep -c .)
+if COUNT=$(pgrep -l -f 'files/usr/.*/termux-|com.termux.api/' 2> /dev/null | grep -c .)
     then
     echo -n "($COUNT)"
-    pkill -9 -f files/usr/.*/termux-
+    pkill -9 -f 'files/usr/.*/termux-|com.termux.api/'
     DONE
 else
     OK

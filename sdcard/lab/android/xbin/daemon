@@ -10,6 +10,7 @@ print_usage () {
 }
 
 validate_args () {
+    # echo Debug: MODE=$MODE PID_FILE=$PID_FILE CMD=$CMD ARGS=$ARGS
     if [[ -z $MODE || -z $PID_FILE || -z $CMD ]] || ! which $CMD &> /dev/null
         then print_usage
     fi

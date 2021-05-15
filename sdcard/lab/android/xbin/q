@@ -1,2 +1,2 @@
 history -a
-/sbin/su -c 'pkill com.termux'
+/sbin/su -c '/data/bin/pkill com.termux'

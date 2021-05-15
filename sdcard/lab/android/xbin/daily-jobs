@@ -2,7 +2,7 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 2.1.0 20210215
+## Version: 2.2.0 20210512
 
 source check-root
 source set-dir
@@ -16,7 +16,7 @@ IS_ONLINE=false
 ONLINE=offline
 NET_WAIT=15
 JOB=1 # Index of first job
-N=6 # Total no. of jobs
+N=7 # Total no. of jobs
 
 # functions
 notify () {
@@ -42,7 +42,7 @@ prepare () {
     uptime
     check-ping && IS_ONLINE=true && ONLINE=online
     
-    if ! tty -s && ! $IS_ONLINE
+    if ! tty &> /dev/null && ! $IS_ONLINE
         then
         notify 0 "Waiting $NET_WAIT seconds for Internet..."
         echo "Waiting $NET_WAIT seconds for Internet"
@@ -68,6 +68,14 @@ run_jobs () {
     fi
     ((JOB++))
     
+    if $IS_ONLINE
+        then
+        notify $JOB "Checking binary Updates..."
+        bash-update
+        busybox-update
+    fi
+    ((JOB++))
+    
     notify $JOB "Optimizing memory & cache..."
     optimize-cache
     optimize-memory
@@ -82,6 +90,9 @@ run_jobs () {
     notify $JOB "Detaching apps from PlayStore..."
     detach-from-playstore --pre-def
     ((JOB++))
+    
+    # Disable wifi scanning
+    settings put global wifi_scan_always_enabled 0
 }
 
 finish () {

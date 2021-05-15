@@ -2,7 +2,7 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 3.1.0 20210225
+## Version: 3.2.0 20210306
 
 source check-root
 source set-dir
@@ -117,17 +117,20 @@ apply () {
         done
         cat $HOSTSD/hosts.final > $SYS_HOSTS
         DONE
-        echo -e "Community update: $(grep  "^# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)"
-        echo -e "Community entries:$(grep  "^# Number of unique domains" $HOSTSD/hosts.comm | cut -d':' -f2)"
-        
-        USER_REC=$(grep -c ^0 $HOSTSD/hosts.user)
-        echo -e "User entries: $USER_REC"
+        report
         echo "Updating Adblock $(DONE)"
     else
         SKIP
     fi
 }
-    
+
+report () {
+    echo -e "Community update: $(grep -m 1 "^# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)"
+    echo -e "Community entries:$(grep -m 1 "^# Number of unique domains" $HOSTSD/hosts.comm | cut -d':' -f2)"
+    USER_REC=$(grep -c ^0 $HOSTSD/hosts.user)
+    echo -e "User entries: $USER_REC"
+}    
+
 case $1 in
  -e | en*)
     enable_adblock
@@ -144,8 +147,10 @@ case $1 in
  -a | ap*)
     is_enabled && apply
     ;;
-
+ -r | re*)
+    is_enabled && report
+    ;;
  *)
-    echo "Usage: $(basename $0) [-a|apply -u|update -e|enable -d|disable]"
+    echo "Usage: $(basename $0) [-a|apply -u|update -e|enable -d|disable -r|report]"
     ;;
 esac

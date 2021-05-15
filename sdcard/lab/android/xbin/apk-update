@@ -20,7 +20,7 @@ read_conf () {
 checkUpdate () {
     echo -n "Checking ${APP_NAME} update "
     APK_URL_OLD=$(cat $APK_URL 2> /dev/null)
-    APK_URL_NEW=$(/system/bin/curl -sk --connect-timeout 5 -m 10 $ASSET_URL | grep -o "$PATTERN" | head -1)
+    APK_URL_NEW=$(/system/bin/curl -sk --connect-timeout 10 -m 10 $ASSET_URL | grep -o "$PATTERN" | head -1)
     if [[ "$APK_URL_NEW" == "$APK_URL_OLD" ]]
         then OK
         rm -f $BUCKET
