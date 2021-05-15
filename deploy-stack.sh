@@ -3,7 +3,7 @@
 # Shell script to deploy the whole stack
 # 
 # Author: Seff Parker
-# Version: 20201227
+# Version: 20210515
 
 if [ $(id -u) -ne 0 ]
     then
@@ -13,12 +13,8 @@ fi
 
 TX_USER=$(stat -c %U /data/data/com.termux)
 
-echo "Installing latest busybox applets..."
-mkdir /data/bin /data/xbin /data/root
-ln -s /data/adb/magisk/busybox /data/bin/busybox
-/data/bin/busybox --install -s /data/bin/
-
 echo "Copying assets..."
+mkdir /data/bin /data/xbin /data/root
 cp -rf data/* /data/
 cp -rf sdcard/* /sdcard/
 
@@ -37,5 +33,9 @@ chown -R $TX_USER.$TX_USER /data/data/com.termux/files/home
 chmod 755 /data/xbin/* /data/bin/*
 chgrp shell /data/xbin/* /data/bin/*
 chcon -R --reference /system/bin /data/bin /data/bin/bash /data/xbin
+
+echo "Installing latest busybox applets..."
+/data/bin/busybox --install -s /data/bin/
+
 
 echo "Reboot to apply the changes"
