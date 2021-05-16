@@ -3,7 +3,7 @@
 # Shell script to deploy the whole stack
 # 
 # Author: Seff Parker
-# Version: 20210515
+# Version: 20210516
 
 if [ $(id -u) -ne 0 ]
     then
@@ -23,7 +23,7 @@ mkdir -p /data/adb/modules/batmobile-mods/system/etc/bash
 ln -s /sdcard/lab/android/etc/bashrc.root /data/adb/modules/batmobile-mods/system/etc/bash/bashrc
 
 echo "Installing user scripts and envs..."
-rm -f /data/data/com.termux/files/home/.bashrc
+mv -f /data/data/com.termux/files/home/.bashrc /data/data/com.termux/files/home/.bashrc.termux
 ln -s /sdcard/lab/android/etc/bashrc.termux /data/data/com.termux/files/home/.bashrc
 ln -s /sdcard/lab/android/etc/bashrc.root /data/root/.bashrc
 cp -f /sdcard/lab/android/bin/* /data/bin/
