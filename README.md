@@ -26,7 +26,7 @@ Handy Android scripts for minor automation and improved productivity.
 
 ## Uninstallation
 1. Remove the Magisk module `batmobile-mods` via Magisk Manager app
-1. Delete the directories `/data/bin`, `/data/xbin`, `/data/root`, `/sdcard/lab/andorid`
+1. Delete the directories `/data/bin`, `/data/xbin`, `/data/root`, `/sdcard/lab/android`
 1. Delete the `.bashrc` symlink and restore the `.bashrc.termux` in Termux home directory
 1. Reboot the device
 
