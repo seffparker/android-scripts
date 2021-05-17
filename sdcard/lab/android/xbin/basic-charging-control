@@ -2,13 +2,14 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 3.0.0 20210228
+# Version: 4.0.0 20210517
 
 # daemon variables
 APP_NAME="Basic Charging Control"
-PID_FILE=$RUN/bcc.pid
-BCC_LOG=$LOG/bcc.log
-BUCKET="$VAR/status-widget/bucket/bcc"
+APP_ID="bcc"
+PID_FILE=$RUN/${APP_ID}.pid
+BCC_LOG=$LOG/${APP_ID}.log
+BUCKET="$VAR/status-widget/bucket/${APP_ID}"
 
 # startup variable
 INIT=true
@@ -22,8 +23,8 @@ SLEEP_SHORT=3
 
 source check-root
 source set-dir
-source $ETC/bcc.device.conf
-source $ETC/bcc.user.conf
+source $ETC/${APP_ID}.device.conf
+source $ETC/${APP_ID}.user.conf
 
 chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE $CURR_BOOST_FILE
 
@@ -51,8 +52,19 @@ set_super () {
 
 hide_status () {
     SHOW_STATUS=false
-    termux-notification-remove bcc
+    termux-notification-remove ${APP_ID}
     echo "Notification disabled for this cycle"
+}
+
+init_current_vector () {
+    let STEPS=${PAUSE_TEMP}-${MIN_TEMP}
+    let STEP=(${PAUSE}-${MAX})*100/${STEPS}
+    echo step=$STEP
+    echo steps=$STEPS
+    for t in $(seq ${MIN_TEMP} ${PAUSE_TEMP})
+        do let s+=1
+        let CURR_VECTOR[${t}]=${MAX}+${STEP}*${s}/100
+        done
 }
 
 daemon_run () {
@@ -61,9 +73,9 @@ trap set_super USR2
 trap hide_status HUP
 exec &> >(logdate | tee "$BCC_LOG")
 echo "Starting ${APP_NAME}"
+init_current_vector
 set_cycle
 echo $ON > $INPUT_SWITCH
-
 while true
     do
     LEVEL=$(cat $LEVEL_FILE)
@@ -103,7 +115,6 @@ while true
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
                 echo "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
                 STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
-                echo "${MODE}charging at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" > ${BUCKET}
                 SETTLED=true
                 unset CURR_MAX
             else
@@ -119,14 +130,20 @@ while true
             fi
         else
             # adjust current
+            if [[ ${TEMP} -lt ${MIN_TEMP} ]]
+                then CURRENT_LIMIT=${MAX}
+            elif [[ ${TEMP} -lt ${PAUSE_TEMP} ]]
+                then CURRENT_LIMIT=${CURR_VECTOR[$TEMP]}
+            fi
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
             STATUS_TEXT="at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
+            echo "${MODE}charging at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" > ${BUCKET}
         fi
         if $SHOW_STATUS && grep -qvw 0 "$BRIGHTNESS_FILE"
             then # show status notification
             BATT_VOLT=$(awk '{printf "%0.2f\n",$1/1000000}' $BATT_VOLT_FILE)
             timeout 2 termux-notification --alert-once \
-            --ongoing -i bcc \
+            --ongoing -i ${APP_ID} \
             -t "${MODE}charging $STATUS_TEXT" \
             -c "Battery is ${LEVEL}% charged to ${BATT_VOLT}v and is at ${TEMP}°C" \
             --button1 "${BUTTON1_TEXT}" \
@@ -174,7 +191,7 @@ while true
             echo "$TEXT. Temp. ${TEMP}°C"
         fi
         echo "Charging $END at $(date +"%l:%M %p") with +$LEVEL_UP% to $LEVEL%" > ${BUCKET}
-        termux-notification -i bcc \
+        termux-notification -i ${APP_ID} \
             -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
             -c "$TEXT" \
             --button1 "${BUTTON_TEXT}" \
@@ -192,7 +209,7 @@ while true
             echo "Level $LEVEL% is above $RESUME_LEVEL%. Disabled, Not charging"
             vibrate 2
             TEXT="Charging is suspended above ${RESUME_LEVEL}%"
-            termux-notification -i bcc \
+            termux-notification -i ${APP_ID} \
             -t "$TEXT" \
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}"
@@ -260,7 +277,7 @@ daemon_status () {
 daemon_stop () {
     PID=$(cat $PID_FILE 2> /dev/null)
     echo -n "Stopping ${APP_NAME} "
-    termux-notification-remove bcc
+    termux-notification-remove ${APP_ID}
     rm -f $BUCKET
     if daemon -k -p $PID_FILE -c $0
         then
