@@ -1,10 +1,11 @@
 # basic-charging-control
 Limit charging current and level to increase the efficiency and lifespan of battery.
 
-The charging current will be dynamically adjusted according battery temperature. 
+The charging current will be dynamically adjusted according battery temperature. Charging will be paused at the specified temperature and will be resumed only when the battery is cooled to the given temperature.
 
-The charging will be stopped at the given LEVEL_MAX, and charging will not be allowed until the battery drained to LEVEL_MIN.
-These levels can be set distinctly for Cyclecharge and Supercharge mode.
+The charging will be stopped at the specified capacity level, and charging will not be allowed until the battery drained to the  given level.
+
+These temperature and capacity levels can be set distinctly for Cyclecharge and Supercharge modes.
 
 See [bcc.user.conf](https://github.com/seffparker/android-scripts/blob/master/sdcard/lab/android/etc/bcc.user.conf) for additional configuration.
 
