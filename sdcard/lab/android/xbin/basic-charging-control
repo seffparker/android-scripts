@@ -121,6 +121,7 @@ while true
                 CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
                 echo "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
+                echo "${MODE}charging at ${LINE_VOLT}  ${CURR_UNLIMIT_TEXT} using ${CHARGER}" > ${BUCKET}
                 STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
                 SETTLED=true
                 unset CURR_MAX
@@ -144,7 +145,6 @@ while true
             fi
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
             STATUS_TEXT="at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
-            echo "${MODE}charging at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT" > ${BUCKET}
         fi
         if $SHOW_STATUS && grep -qvw 0 "$BRIGHTNESS_FILE"
             then # show status notification
