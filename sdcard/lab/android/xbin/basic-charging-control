@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 4.0.0 20210517
+# Version: 4.0.1 20210518
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -29,25 +29,31 @@ source $ETC/${APP_ID}.user.conf
 chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE $CURR_BOOST_FILE
 
 set_cycle () {
+    echo "Setting to Cyclecharge mode"
     MODE="Cycle"
     STOP_LEVEL=$CYCLE_STOP_LEVEL
     RESUME_LEVEL=$CYCLE_RESUME_LEVEL
-    CURRENT_LIMIT=$CYCLE_CURRENT_LIMIT
+    MIN_TEMP=$CYCLE_MIN_TEMP
+    PAUSE_TEMP=$CYCLE_PAUSE_TEMP
+    RESUME_TEMP=$CYCLE_RESUME_TEMP
     BUTTON1_TEXT="Supercharge 🚀"
     BUTTON1_ACTION="su -c '/system/bin/pkill -o -l USR2 -f $0'"
     SETTLED=false
-    echo "Set to Cyclecharge mode"
+    init_current_vector
 }
 
 set_super () {
+    echo "Setting to Supercharge mode"
     MODE="Super"
     STOP_LEVEL=$SUPER_STOP_LEVEL
     RESUME_LEVEL=$SUPER_RESUME_LEVEL
-    CURRENT_LIMIT=$SUPER_CURRENT_LIMIT
+    MIN_TEMP=$SUPER_MIN_TEMP
+    PAUSE_TEMP=$SUPER_PAUSE_TEMP
+    RESUME_TEMP=$SUPER_RESUME_TEMP
     BUTTON1_TEXT="Cyclecharge ♻️"
     BUTTON1_ACTION="su -c '/system/bin/pkill -o -l USR1 -f $0'"
     SETTLED=false
-    echo "Set to Supercharge mode"
+    init_current_vector
 }
 
 hide_status () {
@@ -57,14 +63,15 @@ hide_status () {
 }
 
 init_current_vector () {
+    unset CURR_VECTOR s 
     let STEPS=${PAUSE_TEMP}-${MIN_TEMP}
     let STEP=(${PAUSE}-${MAX})*100/${STEPS}
-    echo step=$STEP
-    echo steps=$STEPS
-    for t in $(seq ${MIN_TEMP} ${PAUSE_TEMP})
+    for t in $(seq ${MIN_TEMP} $((${PAUSE_TEMP}-1)))
         do let s+=1
         let CURR_VECTOR[${t}]=${MAX}+${STEP}*${s}/100
         done
+    echo temp_vector=${!CURR_VECTOR[*]}
+    echo curr_vector=${CURR_VECTOR[*]}
 }
 
 daemon_run () {
@@ -73,7 +80,6 @@ trap set_super USR2
 trap hide_status HUP
 exec &> >(logdate | tee "$BCC_LOG")
 echo "Starting ${APP_NAME}"
-init_current_vector
 set_cycle
 echo $ON > $INPUT_SWITCH
 while true
@@ -92,6 +98,7 @@ while true
             TIME_INIT=$(date +%s)
             INIT=false
             SETTLED=false
+            CURRENT_LIMIT=$MAX
             STATUS_TEXT="is initializing"
             echo "${MODE}charging initialized at $LEVEL% / ${TEMP}°C"
             
