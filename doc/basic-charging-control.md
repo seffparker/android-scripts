@@ -24,7 +24,6 @@ See [bcc.user.conf](https://github.com/seffparker/android-scripts/blob/master/sd
 Usage: start | status | restart | stop
 ```
 
-## Examples
 ```
 basic-charging-control restart
 Stopping Basic Charging Control (PID: 30050)  [ DONE ]
@@ -33,3 +32,21 @@ Starting Basic Charging Control (PID: 27350)  [ DONE ]
 
 ## Preview
 ![basic-charging-control](/doc/images/basic-charging-control.png)
+
+## Test Data
+Using the below temperature values:
+```
+# Limits for Cyclecharge mode
+CYCLE_MIN_TEMP=33
+CYCLE_PAUSE_TEMP=40
+CYCLE_RESUME_TEMP=37
+
+# Limits for Supercharge mode
+SUPER_MIN_TEMP=38
+SUPER_PAUSE_TEMP=44
+SUPER_RESUME_TEMP=40
+```
+and a 12v / 3A USB charger, the current limits will be like below:
+![bcc_current_limit_testdata](/doc/images/bcc_current_limit_testdata.png)
+
+The X-axis is battery temperature and Y-axis is charging current. The charging current will be different at different temperature on each modes.  
