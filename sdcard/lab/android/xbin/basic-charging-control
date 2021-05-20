@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 4.0.1 20210518
+# Version: 4.0.2 20210520
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -20,6 +20,7 @@ SHOW_STATUS=true
 SHOW_WARNING=true
 SLEEP_TINY=1
 SLEEP_SHORT=3
+STEP=1
 
 source check-root
 source set-dir
@@ -64,8 +65,8 @@ hide_status () {
 
 init_current_vector () {
     unset CURR_VECTOR s 
-    let STEPS=${PAUSE_TEMP}-${MIN_TEMP}
-    let STEP=(${PAUSE}-${MAX})*100/${STEPS}
+    let STEPS=${PAUSE_TEMP}-${MIN_TEMP}+1
+    [[ $STEPS -gt 0 ]] && let STEP=(${PAUSE}-${MAX})*100/${STEPS}
     for t in $(seq ${MIN_TEMP} $((${PAUSE_TEMP}-1)))
         do let s+=1
         let CURR_VECTOR[${t}]=${MAX}+${STEP}*${s}/100
@@ -121,7 +122,7 @@ while true
                 CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
                 echo "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
-                echo "${MODE}charging at ${LINE_VOLT}  ${CURR_UNLIMIT_TEXT} using ${CHARGER}" > ${BUCKET}
+                echo "${MODE}charging at ${LINE_VOLT} using ${CHARGER} ${CURR_UNLIMIT_TEXT}" > ${BUCKET}
                 STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
                 SETTLED=true
                 unset CURR_MAX
