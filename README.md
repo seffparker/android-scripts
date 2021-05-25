@@ -8,7 +8,7 @@ Handy Android scripts for minor automation and improved productivity.
 - **Terminal:** Termux, Termux:API
 - **Shell:** [BASH 5](https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/blob/master/bash/bash-arm64) (compiled by Zackptg5)
 - **Busybox:** [busybox-ndk](https://github.com/Magisk-Modules-Repo/busybox-ndk) (compiled by osm0sis)
-- **Root:** Magisk 22 (with SEPolicy inject)
+- **Root:** Magisk 23 (with SEPolicy inject)
 - **Features:** System-less, SELinux Support
 
 ## Deployment
