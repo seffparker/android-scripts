@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 4.0.2 20210520
+# Version: 4.1.0 20210525
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -32,6 +32,7 @@ chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE $CURR_BOOST_FILE
 set_cycle () {
     echo "Setting to Cyclecharge mode"
     MODE="Cycle"
+    MAX_LIMIT=${CYCLE_MAX_LIMIT}
     STOP_LEVEL=$CYCLE_STOP_LEVEL
     RESUME_LEVEL=$CYCLE_RESUME_LEVEL
     MIN_TEMP=$CYCLE_MIN_TEMP
@@ -46,6 +47,7 @@ set_cycle () {
 set_super () {
     echo "Setting to Supercharge mode"
     MODE="Super"
+    MAX_LIMIT=${SUPER_MAX_LIMIT}
     STOP_LEVEL=$SUPER_STOP_LEVEL
     RESUME_LEVEL=$SUPER_RESUME_LEVEL
     MIN_TEMP=$SUPER_MIN_TEMP
@@ -66,10 +68,10 @@ hide_status () {
 init_current_vector () {
     unset CURR_VECTOR s 
     let STEPS=${PAUSE_TEMP}-${MIN_TEMP}+1
-    [[ $STEPS -gt 0 ]] && let STEP=(${PAUSE}-${MAX})*100/${STEPS}
+    [[ $STEPS -gt 0 ]] && let STEP=(${PAUSE}-${MAX_LIMIT})*100/${STEPS}
     for t in $(seq ${MIN_TEMP} $((${PAUSE_TEMP}-1)))
         do let s+=1
-        let CURR_VECTOR[${t}]=${MAX}+${STEP}*${s}/100
+        let CURR_VECTOR[${t}]=${MAX_LIMIT}+${STEP}*${s}/100
         done
     echo temp_vector=${!CURR_VECTOR[*]}
     echo curr_vector=${CURR_VECTOR[*]}
@@ -99,7 +101,7 @@ while true
             TIME_INIT=$(date +%s)
             INIT=false
             SETTLED=false
-            CURRENT_LIMIT=$MAX
+            CURRENT_LIMIT=$MAX_LIMIT
             STATUS_TEXT="is initializing"
             echo "${MODE}charging initialized at $LEVEL% / ${TEMP}°C"
             
@@ -121,26 +123,21 @@ while true
                 sleep $SLEEP_TINY
                 CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
-                echo "Charging settled at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
-                echo "${MODE}charging at ${LINE_VOLT} using ${CHARGER} ${CURR_UNLIMIT_TEXT}" > ${BUCKET}
-                STATUS_TEXT="settled at $LINE_VOLT $CURR_UNLIMIT_TEXT"
+                STATUS_TEXT="settled at $LINE_VOLT using ${CHARGER}"
+                echo "${MODE}charging ${STATUS_TEXT} $CURR_UNLIMIT_TEXT"
+                echo "${MODE}charging at $LINE_VOLT using ${CHARGER} $CURR_UNLIMIT_TEXT" > ${BUCKET}
                 SETTLED=true
                 unset CURR_MAX
             else
-                chmod +w $CURR_LIMIT_FILE
-                echo $BOOST > $CURR_BOOST_FILE
-                echo $MAX > $CURR_LIMIT_FILE
-                chmod -w $CURR_LIMIT_FILE
                 sleep $SLEEP_TINY
                 CURR_MAX=$(cat $CURR_MAX_FILE)
                 CHARGER=$(cat $CHARGER_FILE)
-                STATUS_TEXT="is initialized by $CHARGER"
-                echo "Settling, charger type is $CHARGER"
+                STATUS_TEXT="is settling as $CHARGER"
             fi
         else
             # adjust current
             if [[ ${TEMP} -lt ${MIN_TEMP} ]]
-                then CURRENT_LIMIT=${MAX}
+                then CURRENT_LIMIT=${MAX_LIMIT}
             elif [[ ${TEMP} -lt ${PAUSE_TEMP} ]]
                 then CURRENT_LIMIT=${CURR_VECTOR[$TEMP]}
             fi
