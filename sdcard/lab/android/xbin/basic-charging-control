@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 4.1.0 20210525
+# Version: 5.0.0 20210525
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -27,15 +27,16 @@ source set-dir
 source $ETC/${APP_ID}.device.conf
 source $ETC/${APP_ID}.user.conf
 
-chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE $CURR_BOOST_FILE
+chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE
 
 set_cycle () {
     echo "Setting to Cyclecharge mode"
     MODE="Cycle"
     MAX_LIMIT=${CYCLE_MAX_LIMIT}
     STOP_LEVEL=$CYCLE_STOP_LEVEL
+    LIMIT_LEVEL=${CYCLE_LIMIT_LEVEL}
     RESUME_LEVEL=$CYCLE_RESUME_LEVEL
-    MIN_TEMP=$CYCLE_MIN_TEMP
+    LIMIT_TEMP=$CYCLE_LIMIT_TEMP
     PAUSE_TEMP=$CYCLE_PAUSE_TEMP
     RESUME_TEMP=$CYCLE_RESUME_TEMP
     BUTTON1_TEXT="Supercharge 🚀"
@@ -49,8 +50,9 @@ set_super () {
     MODE="Super"
     MAX_LIMIT=${SUPER_MAX_LIMIT}
     STOP_LEVEL=$SUPER_STOP_LEVEL
+    LIMIT_LEVEL=${SUPER_LIMIT_LEVEL}
     RESUME_LEVEL=$SUPER_RESUME_LEVEL
-    MIN_TEMP=$SUPER_MIN_TEMP
+    LIMIT_TEMP=$SUPER_LIMIT_TEMP
     PAUSE_TEMP=$SUPER_PAUSE_TEMP
     RESUME_TEMP=$SUPER_RESUME_TEMP
     BUTTON1_TEXT="Cyclecharge ♻️"
@@ -66,15 +68,24 @@ hide_status () {
 }
 
 init_current_vector () {
-    unset CURR_VECTOR s 
-    let STEPS=${PAUSE_TEMP}-${MIN_TEMP}+1
+    unset TEMP_VECTOR s 
+    let STEPS=${PAUSE_TEMP}-${LIMIT_TEMP}+1
     [[ $STEPS -gt 0 ]] && let STEP=(${PAUSE}-${MAX_LIMIT})*100/${STEPS}
-    for t in $(seq ${MIN_TEMP} $((${PAUSE_TEMP}-1)))
+    for t in $(seq ${LIMIT_TEMP} ${PAUSE_TEMP})
         do let s+=1
-        let CURR_VECTOR[${t}]=${MAX_LIMIT}+${STEP}*${s}/100
+        let TEMP_VECTOR[${t}]=${MAX_LIMIT}+${STEP}*${s}/100
         done
-    echo temp_vector=${!CURR_VECTOR[*]}
-    echo curr_vector=${CURR_VECTOR[*]}
+    unset LEVEL_VECTOR s
+    let STEPS=${STOP_LEVEL}-${LIMIT_LEVEL}+1
+    [[ $STEPS -gt 0 ]] && let STEP=(${PAUSE}-${MAX_LIMIT})*100/${STEPS}
+    for t in $(seq ${LIMIT_LEVEL} ${STOP_LEVEL})
+        do let s+=1
+        let LEVEL_VECTOR[${t}]=${MAX_LIMIT}+${STEP}*${s}/100
+        done
+    echo temp_index=${!TEMP_VECTOR[*]}
+    echo temp_vector=${TEMP_VECTOR[*]}
+    echo level_index=${!LEVEL_VECTOR[*]}
+    echo level_vector=${LEVEL_VECTOR[*]}
 }
 
 daemon_run () {
@@ -135,11 +146,12 @@ while true
                 STATUS_TEXT="is settling as $CHARGER"
             fi
         else
-            # adjust current
-            if [[ ${TEMP} -lt ${MIN_TEMP} ]]
-                then CURRENT_LIMIT=${MAX_LIMIT}
-            elif [[ ${TEMP} -lt ${PAUSE_TEMP} ]]
-                then CURRENT_LIMIT=${CURR_VECTOR[$TEMP]}
+            # adjust current by temp or level
+            if [[ ${TEMP_VECTOR[$TEMP]:=$MAX_LIMIT} -gt ${LEVEL_VECTOR[$LEVEL]:=$MAX_LIMIT} ]]
+                then
+                CURRENT_LIMIT=${TEMP_VECTOR[$TEMP]}
+            else
+                CURRENT_LIMIT=${LEVEL_VECTOR[$LEVEL]:=$MAX_LIMIT}
             fi
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
             STATUS_TEXT="at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
