@@ -30,23 +30,33 @@ Stopping Basic Charging Control (PID: 30050)  [ DONE ]
 Starting Basic Charging Control (PID: 27350)  [ DONE ]
 ```
 
-## Preview
+## Notification Preview
 ![basic-charging-control](/doc/images/basic-charging-control.png)
 
-## Test Data
-Using the below temperature values:
+## Sample Configuration Data
+Using the below configuration values:
 ```
 # Limits for Cyclecharge mode
-CYCLE_MIN_TEMP=33
+CYCLE_MAX_LIMIT=5
+CYCLE_LIMIT_LEVEL=75
+CYCLE_STOP_LEVEL=90
+CYCLE_LIMIT_TEMP=33
 CYCLE_PAUSE_TEMP=40
 CYCLE_RESUME_TEMP=37
 
 # Limits for Supercharge mode
-SUPER_MIN_TEMP=38
+SUPER_MAX_LIMIT=0
+SUPER_LIMIT_LEVEL=90
+SUPER_STOP_LEVEL=100
+SUPER_LIMIT_TEMP=38
 SUPER_PAUSE_TEMP=44
 SUPER_RESUME_TEMP=40
 ```
-and a 12v / 3A USB charger, the current limits will be like below:
-![bcc_current_limit_testdata](/doc/images/bcc_current_limit_testdata.png)
+and a 12v / 3A USB charger:
+The current limits according to battery temperature will be like below:
+![bcc_current_temperature](/doc/images/bcc_current_temperature.png)
 
-The X-axis is battery temperature and Y-axis is charging current. The charging current will be different at different temperature on each modes.  
+The current limits according to battery capacity will be like below:
+![bcc_current_capacity](/doc/images/bcc_current_capacity.png)
+
+When the current limit is to be imposed by both capacity level and temperature at the same time, then the larger limit with the lease current will applied.
