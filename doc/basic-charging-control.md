@@ -1,16 +1,17 @@
 # basic-charging-control
 Limit charging current and level to increase the efficiency and lifespan of battery.
+This project is inspired from [ACC](https://github.com/VR-25/acc), but with minimal options and device support.
 
-The charging current will be dynamically adjusted according battery temperature. Charging will be paused at the specified temperature and will be resumed only when the battery is cooled to the given temperature.
+The charging current will be dynamically adjusted according battery temperature, battery level, and charger voltage. Charging will be paused at the specified temperature and will be resumed only when the battery is cooled to the given temperature.
 
-The charging will be stopped at the specified capacity level, and charging will not be allowed until the battery drained to the  given level.
+The charging will be stopped at the specified capacity level, and charging will not be allowed until the battery drained to the specified level.
 
 These temperature and capacity levels can be set distinctly for Cyclecharge and Supercharge modes.
 
 See [bcc.user.conf](https://github.com/seffparker/android-scripts/blob/master/sdcard/lab/android/etc/bcc.user.conf) for additional configuration.
 
 ## Features
-- Dynamically adjust current based on battery temperature
+- Dynamically adjust current based on battery temperature and level.
 - Pause and resume charging at specified battery temperatures.
 - Stop charging at specified battery level%
 - Notification with charging mode, charger current, charger voltage, battery voltage, battery temperature, and battery level%
