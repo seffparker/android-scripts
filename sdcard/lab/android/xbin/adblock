@@ -2,7 +2,7 @@
 
 ## Manage adblock via /etc/hosts
 ## Author: Seff P
-## Version: 3.2.0 20210306
+## Version: 3.2.1 20210604
 
 source check-root
 source set-dir
@@ -75,7 +75,7 @@ download () {
         CUR_RECORDS=$(grep -c ^0 $HOSTSD/hosts.comm)
         echo $CUR_RECORDS > ${HOSTSV}/hosts.comm_records
         NEW_RECORDS=$(($CUR_RECORDS - $PREV_RECORDS))
-        echo -e "Database version: $(grep  "# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!"  --id adblock-update
+        echo -e "Database version: $(grep  "# Date:" $HOSTSD/hosts.comm | cut -d' ' -f3-5)\nNew records: $NEW_RECORDS" | termux-notification --title "Adblock Database Updated!" --id adblock-update --icon file_download
         echo "Adblock hosts updated on $(date +%F)" > $BUCKET
         UPDATED=true
         DONE

@@ -2,7 +2,7 @@
 
 ## Update Termux APT packages
 ## Author: Seff P
-## Version: 20201017
+## Version: 1.0.1 20210604
 
 source set-dir
 source set-prompt
@@ -19,7 +19,7 @@ case $1 in
     let PKG_UPDATE_AGE_DAYS=$PKG_UPDATE_AGE/86400
     if [ $PKG_UPDATE_AGE -gt $PKG_UPDATE_THR ]
     then
-        termux-run termux-notification --title "APT packages are not updated recently!" --content "Last updated $PKG_UPDATE_AGE_DAYS days ago" 
+        termux-notification --title "APT packages are not updated recently!" --content "Last updated $PKG_UPDATE_AGE_DAYS days ago" --icon warning
         echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago" > $BUCKET
     fi
     echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago"

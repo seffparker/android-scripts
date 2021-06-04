@@ -2,7 +2,7 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 2.0.0 20210225
+## Version: 2.0.1 20210604
 
 source set-dir
 source set-prompt
@@ -30,7 +30,7 @@ checkUpdate () {
         return 1
     else
         APK_NAME=$(basename $APK_URL_NEW)
-        termux-notification --title "${APP_NAME} update available" --content "$APK_NAME" --id $PKG_ID
+        termux-notification --title "${APP_NAME} update available" --content "$APK_NAME" --id $PKG_ID --icon info
         UPDATED
         return 0
     fi
@@ -49,12 +49,12 @@ installUpdate () {
         echo $APK_URL_NEW > $APK_URL
         PKG_VERSION_NEW=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')
         termux-notification --title "${APP_NAME} is successfully updated" \
-        --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID
+        --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID --icon file_download
         echo "Updated version: $PKG_VERSION_NEW"
         echo "$APP_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
         echo "Updating ${APP_NAME} $(DONE)"
     else
-        termux-notification --title "${APP_NAME} update failed" --content "$APK_NAME" --id $PKG_ID
+        termux-notification --title "${APP_NAME} update failed" --content "$APK_NAME" --id $PKG_ID --icon error
         echo "Updating ${APP_NAME} $(FAIL)"
     fi
     rm -f $TMP/$APK_NAME

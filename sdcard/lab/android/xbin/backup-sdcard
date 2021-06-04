@@ -2,7 +2,7 @@
 
 ## Sync Internal storage to SD card
 ## Author: Seff P
-## Version: 20200919
+## Version: 1.0.1 20210604
 
 source check-root
 
@@ -31,7 +31,7 @@ case $1 in
     let BACKUP_SDCARD_AGE_DAYS=$BACKUP_SDCARD_AGE/86400
     if [ $BACKUP_SDCARD_AGE -gt $BACKUP_SDCARD_THR ]
     then
-        termux-run termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGE_DAYS days old"
+        termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGE_DAYS days old" --icon warning
         echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago" > $BUCKET
     fi
     echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago"

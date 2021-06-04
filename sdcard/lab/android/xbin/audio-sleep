@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 4.1.0 20210214
+## Version: 4.1.1 20210604
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
@@ -26,14 +26,16 @@ daemon_run () {
         --button1 "Extend ${EXTEND}m" \
         --button1-action "su -c '$0 +${EXTEND}'"\
         --button2 "Abort" \
-        --button2-action "su -c '$0 0'"
+        --button2-action "su -c '$0 0'" \
+        --icon timer
         sleep 60
     done
     echo -n 0 > ${STATUS}
     termux-notification --content "Audio player is being stopped" \
         --ongoing --id audio-sleep \
         --button1 "Extend ${EXTEND}m" \
-        --button1-action "su -c '$0 ${EXTEND}'"
+        --button1-action "su -c '$0 ${EXTEND}'" \
+        --icon timer
     echo "Audio player is being stopped" 
     ORG_VOL=$(termux-volume | awk '/music/ {getline; print $2+0}')
     for VOL in $(seq $ORG_VOL | sort -nr)

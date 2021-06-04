@@ -2,7 +2,7 @@
 
 ## Optimize Android app databases
 ## Author: Seff P
-## Version: 20201202
+## Version: 1.0.1 20210604
 
 source set-dir
 source set-prompt
@@ -17,7 +17,7 @@ BUCKET="$VAR/status-widget/bucket/optimize-db"
     let OPTIMIZE_DB_AGE_DAYS=$OPTIMIZE_DB_AGE/86400
     if [ $OPTIMIZE_DB_AGE -gt $OPTIMIZE_DB_THR ]
     then
-        termux-run termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" 
+        termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" --icon warning
         echo "Databases last optimized $OPTIMIZE_DB_AGE_DAYS days ago" > $BUCKET
         
     fi
