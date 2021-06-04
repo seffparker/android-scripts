@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 5.0.0 20210525
+# Version: 5.0.2 20210603
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -26,8 +26,6 @@ source check-root
 source set-dir
 source $ETC/${APP_ID}.device.conf
 source $ETC/${APP_ID}.user.conf
-
-chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE
 
 set_cycle () {
     echo "Setting to Cyclecharge mode"
@@ -94,8 +92,10 @@ trap set_super USR2
 trap hide_status HUP
 exec &> >(logdate | tee "$BCC_LOG")
 echo "Starting ${APP_NAME}"
-set_cycle
+chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE
 echo $ON > $INPUT_SWITCH
+CAPACITY=$(cat $CAPACITY_FILE)
+set_cycle
 while true
     do
     LEVEL=$(cat $LEVEL_FILE)
@@ -113,6 +113,7 @@ while true
             INIT=false
             SETTLED=false
             CURRENT_LIMIT=$MAX_LIMIT
+            ICON="power"
             STATUS_TEXT="is initializing"
             echo "${MODE}charging initialized at $LEVEL% / ${TEMP}°C"
             
@@ -123,25 +124,29 @@ while true
                 then # resume charging
                 echo "Charging resumed at ${RESUME_TEMP}°C"
                 IS_PAUSED=false
+                ICON="power"
             fi
     
         elif ! $SETTLED
             then # calculate max current
-            if grep -wq "^${CURR_MAX}$" $CURR_MAX_FILE
+            CURR_PREV=${CURR_NOW:=0}
+            CURR_NOW=$(cat $CURR_MAX_FILE)
+            if [[ "$CURR_NOW" == "$CURR_MAX" ]]
                 then
-                chmod +w $CURR_LIMIT_FILE
                 echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
                 sleep $SLEEP_TINY
-                CURR_UNLIMIT_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
+                CURR_MAX_TEXT=$(echo $CURR_MAX | awk '{printf "(max. "; if ($1 >= 1000000) print $NF/1000000 "A)"; else print $1/1000 "mA)"}')
                 CURR=$(awk '{if ($1 >= 1000000) print $NF/1000000 "A"; else print $1/1000 "mA"}' $CURR_NOW_FILE)
                 STATUS_TEXT="settled at $LINE_VOLT using ${CHARGER}"
-                echo "${MODE}charging ${STATUS_TEXT} $CURR_UNLIMIT_TEXT"
-                echo "${MODE}charging at $LINE_VOLT using ${CHARGER} $CURR_UNLIMIT_TEXT" > ${BUCKET}
+                echo "${MODE}charging ${STATUS_TEXT} $CURR_MAX_TEXT"
+                echo "${MODE}charging at $LINE_VOLT using ${CHARGER} $CURR_MAX_TEXT" > ${BUCKET}
                 SETTLED=true
-                unset CURR_MAX
+                unset CURR_NOW CURR_MAX
             else
+                echo $MAX > $CURR_LIMIT_FILE
                 sleep $SLEEP_TINY
-                CURR_MAX=$(cat $CURR_MAX_FILE)
+                CURR_MAX=$(($CURR_NOW > $CURR_PREV ? $CURR_NOW : $CURR_PREV))
+                echo prev=$CURR_PREV now=$CURR_NOW max=$CURR_MAX
                 CHARGER=$(cat $CHARGER_FILE)
                 STATUS_TEXT="is settling as $CHARGER"
             fi
@@ -154,7 +159,7 @@ while true
                 CURRENT_LIMIT=${LEVEL_VECTOR[$LEVEL]:=$MAX_LIMIT}
             fi
             echo $CURRENT_LIMIT > $CURR_LIMIT_FILE
-            STATUS_TEXT="at $LINE_VOLT / $CURR $CURR_UNLIMIT_TEXT"
+            STATUS_TEXT="at $LINE_VOLT / ${CURR} ${CURR_MAX_TEXT}, Limit: ${CURRENT_LIMIT}"
         fi
         if $SHOW_STATUS && grep -qvw 0 "$BRIGHTNESS_FILE"
             then # show status notification
@@ -166,7 +171,8 @@ while true
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}" \
             --button2 "Hide Status" \
-            --button2-action "su  -c '/system/bin/pkill -o -l HUP -f $0'"
+            --button2-action "su  -c '/system/bin/pkill -o -l HUP -f $0'" \
+            --icon $ICON
         fi
         
         if [[ $TEMP -ge $PAUSE_TEMP ]] && ! $IS_PAUSED
@@ -174,6 +180,7 @@ while true
             IS_PAUSED=true
             echo "Charging paused at ${TEMP}°C, resumes at ${RESUME_TEMP}°C. Level ${LEVEL}%"
             STATUS_TEXT="paused at ${PAUSE_TEMP}°C, resumes at ${RESUME_TEMP}°C"
+            ICON="pause"
         fi      
        
         if [[ $LEVEL -ge $STOP_LEVEL ]]
@@ -190,29 +197,33 @@ while true
     elif $WAS_CHARGING
         then # charging just stopped
         LEVEL_UP=$(($LEVEL-$LEVEL_INIT))
-        TIME=$(date +%s)
-        TIME_SPENT=$(($TIME-$TIME_INIT))
-        TIME_SPENT=$(date -ud "@$TIME_SPENT" +'%Hh:%Mm')
+        TIME_NOW=$(date +%s)
+        TIME_SPENT=$(($TIME_NOW-$TIME_INIT))
+        DURATION=$(date -ud "@$TIME_SPENT" +'%Hh:%Mm')
+        let RATE=($CAPACITY * $LEVEL_UP / $TIME_SPENT / 1666)
+        RATE_TEXT="$RATE mAh/min."
         if $IS_DISABLED
             then
             BUTTON_TEXT="$BUTTON1_TEXT"
             BUTTON_ACTION="$BUTTON1_ACTION"
-            TEXT="Charging is limited to ${STOP_LEVEL}%"
+            END_TEXT="Charging is limited to ${STOP_LEVEL}%"
             END="completed"
-            echo "$TEXT. Temp. ${TEMP}°C"
+            ICON="done"
             set_cycle
         else
             unset BUTTON_TEXT BUTTON_ACTION
-            TEXT="Charging interrupted at $LEVEL%"
+            END_TEXT="Charging interrupted at $LEVEL%"
             END="interrupted"
-            echo "$TEXT. Temp. ${TEMP}°C"
+            ICON="cancel"
         fi
+        echo "${END_TEXT}, ${RATE_TEXT}, Temp. ${TEMP}°C"
         echo "Charging $END at $(date +"%l:%M %p") with +$LEVEL_UP% to $LEVEL%" > ${BUCKET}
         termux-notification -i ${APP_ID} \
-            -t "Charged additional ${LEVEL_UP}% in $TIME_SPENT" \
-            -c "$TEXT" \
+            -t "Charged additional ${LEVEL_UP}% in $DURATION, ${RATE_TEXT}" \
+            -c "$END_TEXT" \
             --button1 "${BUTTON_TEXT}" \
-            --button1-action "${BUTTON_ACTION}"
+            --button1-action "${BUTTON_ACTION}" \
+            --icon $ICON
         INIT=true
         SHOW_STATUS=true
         WAS_CHARGING=false
@@ -229,7 +240,8 @@ while true
             termux-notification -i ${APP_ID} \
             -t "$TEXT" \
             --button1 "${BUTTON1_TEXT}" \
-            --button1-action "${BUTTON1_ACTION}"
+            --button1-action "${BUTTON1_ACTION}" \
+            --icon block
             SHOW_WARNING=false
             unset TEXT
         elif [[ $STATE -eq $OFFLINE ]] && ! $SHOW_WARNING
@@ -296,9 +308,9 @@ daemon_stop () {
     echo -n "Stopping ${APP_NAME} "
     termux-notification-remove ${APP_ID}
     rm -f $BUCKET
+    echo $ON > $INPUT_SWITCH
     if daemon -k -p $PID_FILE -c $0
         then
-        echo $ON > $INPUT_SWITCH
         rm -f $PID_FILE
         echo "(PID: $PID) $(DONE)"
     else
