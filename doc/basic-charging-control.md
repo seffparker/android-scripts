@@ -32,7 +32,7 @@ Starting Basic Charging Control (PID: 27350)  [ DONE ]
 ```
 
 ## Notification Preview
-![basic-charging-control](/doc/images/basic-charging-control.png)
+![basic-charging-control](/doc/images/basic-charging-control.gif)
 
 ## Sample Configuration Data
 Using the below configuration values:
