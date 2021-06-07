@@ -22,4 +22,4 @@ Aborting audio-sleep  [ DONE ]
 Aborting audio-sleep  [ SKIP ]
 ```
 ## Preview
-![audio-sleep](/doc/images/audio-sleep.png)
+![audio-sleep](/doc/images/audio-sleep.gif)
