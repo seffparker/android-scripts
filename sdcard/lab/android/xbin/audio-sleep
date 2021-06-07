@@ -2,7 +2,7 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 4.1.1 20210604
+## Version: 4.2.0 20210607
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
@@ -12,6 +12,7 @@ source set-prompt
 PID_FILE=$RUN/audio-sleep.pid
 STATUS=$VAR/audio-sleep.left
 EXTEND=30
+KEEP_STATUS=false
 [[ -f $ETC/audio-sleep.conf ]] && source $ETC/audio-sleep.conf
 
 daemon_run () {
@@ -23,12 +24,14 @@ daemon_run () {
         echo -n ${MIN} > ${STATUS}
         termux-notification --alert-once --ongoing --id audio-sleep \
         -t "Audio player will stop in $MIN minutes" \
-        --button1 "Extend ${EXTEND}m" \
+        --button1 "+${EXTEND}m" \
         --button1-action "su -c '$0 +${EXTEND}'"\
-        --button2 "Abort" \
-        --button2-action "su -c '$0 0'" \
+        --button2 "Custom" \
+        --button2-action "su -c '$0 \$REPLY'"\
+        --button3 "Abort" \
+        --button3-action "su -c '$0 0'" \
         --icon timer
-        sleep 60
+        sleep 60 || exit
     done
     echo -n 0 > ${STATUS}
     termux-notification --content "Audio player is being stopped" \
@@ -74,7 +77,7 @@ daemon_stop () {
         busybox pkill -9 -P $PID &> /dev/null
         daemon -k -p $PID_FILE -c $0
         termux-wake-unlock
-        termux-notification-remove audio-sleep
+        $KEEP_STATUS || termux-notification-remove audio-sleep
         rm -f $STATUS $PID_FILE
         DONE
     else
@@ -102,12 +105,14 @@ case $1 in
         daemon_stop
         ;;
     +[1-9]*)
+        KEEP_STATUS=true
         MIN_LEFT=$(cat $STATUS 2> /dev/null)
         let MIN=${MIN_LEFT}${1}
         daemon_stop &> /dev/null
         daemon_start $MIN
         ;;
     [1-9]*)
+        KEEP_STATUS=true
         daemon_stop &> /dev/null
         daemon_start $1
         ;;
