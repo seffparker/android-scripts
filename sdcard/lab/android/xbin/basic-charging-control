@@ -217,6 +217,7 @@ while true
             ICON="cancel"
         fi
         echo "${END_TEXT}, ${RATE_TEXT}, Temp. ${TEMP}°C"
+        echo "Charged additional ${LEVEL_UP}% in $DURATION"
         echo "Charging $END at $(date +"%l:%M %p") with +$LEVEL_UP% to $LEVEL%" > ${BUCKET}
         termux-notification -i ${APP_ID} \
             -t "Charged additional ${LEVEL_UP}% in $DURATION, ${RATE_TEXT}" \
