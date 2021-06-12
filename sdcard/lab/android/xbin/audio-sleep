@@ -2,26 +2,43 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 4.2.0 20210607
+## Version: 5.0.0 20210612
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
 source set-dir
 source set-prompt
 
-PID_FILE=$RUN/audio-sleep.pid
-STATUS=$VAR/audio-sleep.left
+APP_ID="audio-sleep"
+PID_FILE=$RUN/${APP_ID}.pid
+LOG_FILE=$LOG/${APP_ID}.log
+LEFT_FILE=$VAR/${APP_ID}.left
+KEEP_FILE=$VAR/${APP_ID}.keep
 EXTEND=30
 KEEP_STATUS=false
+KEEP_WIFI=false
+KEEP_DATA=false
+KEEP_BT=false
+
 [[ -f $ETC/audio-sleep.conf ]] && source $ETC/audio-sleep.conf
 
 daemon_run () {
-    tty -s && exec &> >(logdate)
+    exec &> >(logdate | tee $LOG_FILE)
+    KEEP=$2
+    [[ ! "$KEEP" ]] && [[ -f $KEEP_FILE ]] && KEEP=$(cat $KEEP_FILE)
+    [[ $KEEP =~ w ]] && KEEP_WIFI=true
+    [[ $KEEP =~ d ]] && KEEP_DATA=true
+    [[ $KEEP =~ b ]] && KEEP_BT=true
+    echo "KEEP_WIFI=$KEEP_WIFI"
+    echo "KEEP_DATA=$KEEP_DATA"
+    echo "KEEP_BT=$KEEP_BT"
+    echo $KEEP > $KEEP_FILE
+    echo KEEP=$KEEP
     termux-wake-lock
     for ((MIN=$1; MIN > 0; MIN--))
     do
         echo "$MIN minutes left to sleep"
-        echo -n ${MIN} > ${STATUS}
+        echo -n ${MIN} > ${LEFT_FILE}
         termux-notification --alert-once --ongoing --id audio-sleep \
         -t "Audio player will stop in $MIN minutes" \
         --button1 "+${EXTEND}m" \
@@ -33,7 +50,7 @@ daemon_run () {
         --icon timer
         sleep 60 || exit
     done
-    echo -n 0 > ${STATUS}
+    echo -n 0 > ${LEFT_FILE}
     termux-notification --content "Audio player is being stopped" \
         --ongoing --id audio-sleep \
         --button1 "Extend ${EXTEND}m" \
@@ -51,21 +68,28 @@ daemon_run () {
     input keyevent 86 # stop media
     echo "Restoring volume back to $ORG_VOL"
     termux-volume music $ORG_VOL # restore volume
-    echo "Turning off Bluetooth and Internet"
-    /system/bin/svc bluetooth disable
-    /system/bin/svc data disable
-    /system/bin/svc wifi disable
-    rm -fv $PID_FILE $STATUS
+    echo "Turning off connections if needed"
+    $KEEP_WIFI || /system/bin/svc wifi disable
+    $KEEP_DATA || /system/bin/svc data disable
+    $KEEP_BT || /system/bin/svc bluetooth disable
+    rm -fv $PID_FILE $LEFT_FILE $KEEP_FILE
     termux-notification-remove audio-sleep
     termux-wake-unlock
     echo "Exiting cleanly"
 }
 
 print_usage () {
-    echo "USAGE:"
-    echo -e "\t`basename $0` <minutes-to-sleep>"
-    echo -e "\t`basename $0` +<minutes-to-extend>"
-    echo -e "\t`basename $0` 0 <zero-to-abort>"
+    echo "USAGE: `basename $0` ARG1 [ARG2]"
+    echo
+    echo ARG1: 
+    echo -e "\t<minutes-to-sleep>"
+    echo -e "\t+<minutes-to-extend>"
+    echo -e "\t<zero-to-abort>"
+    echo
+    echo ARG2:
+    echo -e "\tw - Keep wifi state"
+    echo -e "\td - Keep data state"
+    echo -e "\tb - Keep bluetooth state"
     exit 1
 }
 
@@ -78,10 +102,10 @@ daemon_stop () {
         daemon -k -p $PID_FILE -c $0
         termux-wake-unlock
         $KEEP_STATUS || termux-notification-remove audio-sleep
-        rm -f $STATUS $PID_FILE
+        rm -f $LEFT_FILE $PID_FILE
         DONE
     else
-        rm -f $STATUS $PID_FILE
+        rm -f $LEFT_FILE $PID_FILE
         termux-notification-remove audio-sleep
         OK
     fi
@@ -89,7 +113,7 @@ daemon_stop () {
 
 daemon_start () {
     echo -ne "Setting sleep timer to $1 minutes "
-    if daemon -s -p $PID_FILE -c $0 -a "run $1"
+    if daemon -s -p $PID_FILE -c $0 -a "run $1 $2"
         then
         DONE
     else
@@ -99,22 +123,23 @@ daemon_start () {
 
 case $1 in
     run)
-        [[ $2 -gt 0 ]] && daemon_run $2 || print_usage
+        [[ $2 -gt 0 ]] && daemon_run $2 $3 || print_usage
         ;;
     0)
         daemon_stop
+        rm -f $KEEP_FILE
         ;;
     +[1-9]*)
         KEEP_STATUS=true
-        MIN_LEFT=$(cat $STATUS 2> /dev/null)
+        MIN_LEFT=$(cat $LEFT_FILE 2> /dev/null)
         let MIN=${MIN_LEFT}${1}
         daemon_stop &> /dev/null
-        daemon_start $MIN
+        daemon_start $MIN $2
         ;;
     [1-9]*)
         KEEP_STATUS=true
         daemon_stop &> /dev/null
-        daemon_start $1
+        daemon_start $1 $2
         ;;
     *)
         print_usage
