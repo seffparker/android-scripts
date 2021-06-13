@@ -4,7 +4,7 @@ Handy Android scripts for minor automation and improved productivity.
 ## Current Environment
 - **Architecture:** aarch64/arm64
 - **Device:** Xiaomi POCO F1
-- **OS:** Android 9 / MIUI 11
+- **OS:** Android 10 / MIUI 12
 - **Terminal:** Termux, Termux:API
 - **Shell:** [BASH 5](https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/blob/master/bash/bash-arm64) (compiled by Zackptg5)
 - **Busybox:** [busybox-ndk](https://github.com/Magisk-Modules-Repo/busybox-ndk) (compiled by osm0sis)
