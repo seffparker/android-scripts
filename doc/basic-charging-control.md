@@ -8,14 +8,14 @@ The charging will be stopped at the specified capacity level, and charging will 
 
 These temperature and capacity levels can be set distinctly for Cyclecharge and Supercharge modes.
 
-See [bcc.user.conf](https://github.com/seffparker/android-scripts/blob/master/sdcard/lab/android/etc/bcc.user.conf) for additional configuration.
+See [bcc.user.conf](sdcard/lab/android/etc/bcc.user.conf) for additional configuration.
 
 ## Features
 - Dynamically adjust current based on battery temperature and level.
 - Pause and resume charging at specified battery temperatures.
 - Stop charging at specified battery level%
 - Notification with charging mode, charger current, charger voltage, battery voltage, battery temperature, and battery level%
-- Compatible with [status-widget](https://github.com/seffparker/android-scripts/blob/master/doc/status-widget.md)
+- Compatible with [status-widget](/doc/status-widget.md)
 - Charging modes can be toggled via notification button.
 - Notification can be hidden.
 - Logging and debugging.
