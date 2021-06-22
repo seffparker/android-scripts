@@ -2,7 +2,7 @@
 
 ## Update bash compiled by Zackpkg5
 ## Author: Seff P
-## Version: 1.0.0 20210515
+## Version: 1.0.1 20210620
 
 source check-root
 source set-dir
@@ -14,7 +14,6 @@ APP_URL="https://raw.githubusercontent.com/Zackptg5/Cross-Compiled-Binaries-Andr
 INSTALL_DIR="/data/bin"
 UPDATED=false
 CURL="/system/bin/curl"
-BUCKET="${VAR}/status-widget/bucket/${APP_NAME}"
 
 check () {
     echo -n "Checking for ${APP_DN} update "
@@ -51,7 +50,7 @@ apply () {
     cp -f $BIN/${APP_NAME} $INSTALL_DIR/
     /system/bin/chmod +x $INSTALL_DIR/${APP_NAME}
     NEW_VER=$($INSTALL_DIR/bash --version | awk '{print $4; exit}')
-    echo "${APP_DN} updated to $NEW_VER on $(date +%F)" > $BUCKET
+    termux-notification -t "${APP_DN} updated to $NEW_VER" -c "" --id ${APP_NAME}
     echo "Updating ${APP_DN} to $NEW_VER $(DONE)"
 }
 
