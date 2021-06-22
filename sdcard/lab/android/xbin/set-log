@@ -1,0 +1,37 @@
+# Handle log to file, tee to console, debug, timestamps etc
+# Author: Seff Parker
+# Version: 0.0.1 20210622
+
+add-date () {
+if [ -p /proc/self/fd/0 ]
+    # input is pipe
+	then cat - | while read -r line
+	do echo "$(date +"[%F %X %Z] -") $line"
+	done
+elif [[ "$1" ]]
+    # input is arg
+	then echo "$(date +'[%F %X %Z]') - $*"
+else
+    # no input
+    echo -n "$(date +'[%F %X %Z]') -"
+fi
+}
+
+
+file-log () {
+    if [[ "$LOG_FILE" ]]
+        then add-date $* >> ${LOG_FILE}
+    fi
+}
+
+tee-log () {
+    add-date $* | tee -a ${LOG_FILE}
+}
+
+debug () {
+    if [[ $DEBUG == "true" ]] || [[ $DEBUG == "1" ]]
+        then echo $*
+    fi
+}
+
+[[ $0 =~ set-log ]] && add-date $*
