@@ -1,10 +1,6 @@
 #!/system/bin/sh
 
 {
-    # Kill audioserver PID if it was initialized already
-    SERVERPID=$(pidof audioserver)
-    [ "$SERVERPID" ] && kill $SERVERPID
-
     echo "$(/data/xbin/logdate) Waiting for boot completion"
     while [ "$(getprop sys.boot_completed)" != "1" ]
         do sleep 1
