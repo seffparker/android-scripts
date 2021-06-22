@@ -9,26 +9,36 @@ if /system/bin/tty -s ; then
 fi
 
 BEGIN () {
-    echo -e "${B} [ BEGIN ]${W}"
+    echo -e "${*}${B} [ BEGIN ]${W}"
     }
     
 DONE () {
-    echo -e "${Y} [ DONE ]${W}"
+    echo -e "${*}${Y} [ DONE ]${W}"
     }
 OK () {
-    echo -e "${G} [ OK ]${W}"
+    echo -e "${*}${G} [ OK ]${W}"
     }
 UPDATED () {
-    echo -e "${Y} [ UPDATED ]${W}"
+    echo -e "${*}${Y} [ UPDATED ]${W}"
     }    
 
 SKIP () {
-    echo -e "${G} [ SKIP ]${W}"
+    echo -e "${*}${G} [ SKIP ]${W}"
     }
 ABORT () {
-    echo -e "${Y} [ ABORT ]${W}"
+    echo -e "${*}${Y} [ ABORT ]${W}"
+    }
+    
+ABORT_ALL () {
+    echo -e "${*}${Y} [ ABORT ]${W}"
+    exit 2
     }
     
 FAIL () {
-    echo -e "${R} [ FAIL ]${W}"
+    echo -e "${*}${R} [ FAIL ]${W}"
+    }
+    
+FAIL_ALL () {
+    echo -e "${*}${R} [ FAIL ]${W}"
+    exit 1
     }
