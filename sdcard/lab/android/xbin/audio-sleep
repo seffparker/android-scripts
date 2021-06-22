@@ -2,12 +2,13 @@
 
 ## Auto-stop media playback and turn off Bluetooth
 ## Author: Seff P
-## Version: 5.0.0 20210612
+## Version: 5.0.1 20210622
 
 source /sdcard/lab/android/etc/bashrc.root
 source check-root
 source set-dir
 source set-prompt
+source set-log
 
 APP_ID="audio-sleep"
 PID_FILE=$RUN/${APP_ID}.pid
@@ -23,17 +24,18 @@ KEEP_BT=false
 [[ -f $ETC/audio-sleep.conf ]] && source $ETC/audio-sleep.conf
 
 daemon_run () {
-    exec &> >(logdate | tee $LOG_FILE)
+    :> ${LOG_FILE}
+    exec &> >(tee-log)
     KEEP=$2
     [[ ! "$KEEP" ]] && [[ -f $KEEP_FILE ]] && KEEP=$(cat $KEEP_FILE)
     [[ $KEEP =~ w ]] && KEEP_WIFI=true
     [[ $KEEP =~ d ]] && KEEP_DATA=true
     [[ $KEEP =~ b ]] && KEEP_BT=true
+    echo KEEP=$KEEP
     echo "KEEP_WIFI=$KEEP_WIFI"
     echo "KEEP_DATA=$KEEP_DATA"
     echo "KEEP_BT=$KEEP_BT"
     echo $KEEP > $KEEP_FILE
-    echo KEEP=$KEEP
     termux-wake-lock
     for ((MIN=$1; MIN > 0; MIN--))
     do
