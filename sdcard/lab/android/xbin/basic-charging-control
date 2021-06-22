@@ -2,14 +2,15 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 5.0.2 20210603
+# Version: 5.0.2 20210622
 
 # daemon variables
 APP_NAME="Basic Charging Control"
 APP_ID="bcc"
 PID_FILE=$RUN/${APP_ID}.pid
-BCC_LOG=$LOG/${APP_ID}.log
+LOG_FILE=$LOG/${APP_ID}.log
 BUCKET="$VAR/status-widget/bucket/${APP_ID}"
+BIN_DEPS="inotifywait"
 
 # startup variable
 INIT=true
@@ -23,7 +24,9 @@ SLEEP_SHORT=3
 STEP=1
 
 source check-root
+source check-bin $BIN_DEPS
 source set-dir
+source set-log
 source $ETC/${APP_ID}.device.conf
 source $ETC/${APP_ID}.user.conf
 
@@ -80,17 +83,18 @@ init_current_vector () {
         do let s+=1
         let LEVEL_VECTOR[${t}]=${MAX_LIMIT}+${STEP}*${s}/100
         done
-    echo temp_index=${!TEMP_VECTOR[*]}
-    echo temp_vector=${TEMP_VECTOR[*]}
-    echo level_index=${!LEVEL_VECTOR[*]}
-    echo level_vector=${LEVEL_VECTOR[*]}
+    debug temp_index=${!TEMP_VECTOR[*]}
+    debug temp_vector=${TEMP_VECTOR[*]}
+    debug level_index=${!LEVEL_VECTOR[*]}
+    debug level_vector=${LEVEL_VECTOR[*]}
 }
 
 daemon_run () {
 trap set_cycle USR1
 trap set_super USR2
 trap hide_status HUP
-exec &> >(logdate | tee "$BCC_LOG")
+:> ${LOG_FILE}
+exec &> >(tee-log)
 echo "Starting ${APP_NAME}"
 chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE
 echo $ON > $INPUT_SWITCH
@@ -146,9 +150,9 @@ while true
                 echo $MAX > $CURR_LIMIT_FILE
                 sleep $SLEEP_TINY
                 CURR_MAX=$(($CURR_NOW > $CURR_PREV ? $CURR_NOW : $CURR_PREV))
-                echo prev=$CURR_PREV now=$CURR_NOW max=$CURR_MAX
                 CHARGER=$(cat $CHARGER_FILE)
                 STATUS_TEXT="is settling as $CHARGER"
+                debug prev=$CURR_PREV now=$CURR_NOW max=$CURR_MAX
             fi
         else
             # adjust current by temp or level
@@ -216,8 +220,8 @@ while true
             END="interrupted"
             ICON="cancel"
         fi
-        echo "${END_TEXT}, ${RATE_TEXT}, Temp. ${TEMP}°C"
-        echo "Charged additional ${LEVEL_UP}% in $DURATION"
+        echo "${END_TEXT}, Temp. ${TEMP}°C"
+        echo "Charged additional ${LEVEL_UP}% in ${DURATION},  ${RATE_TEXT}"
         echo "Charging $END at $(date +"%l:%M %p") with +$LEVEL_UP% to $LEVEL%" > ${BUCKET}
         termux-notification -i ${APP_ID} \
             -t "Charged additional ${LEVEL_UP}% in $DURATION, ${RATE_TEXT}" \

@@ -2,11 +2,12 @@
 
 # Generate plain HTML file from text file
 # Author: Seff Parker
-# Version: 20210208 v1.0.2
+# Version: 1.1.1 20210622
 
 source check-root
 source set-prompt
 source set-dir
+source set-log
 
 APP_NAME="Status Widget"
 PID_FILE="$RUN/status-widget.pid"
@@ -15,7 +16,7 @@ HTML_FILE="$VAR/status-widget/html/status-widget"
 NGX_CONF="$ETC/nginx/status-widget.conf"
 
 daemon_run () {
-    tty -s && exec &> >(logdate)
+    tty -s && exec &> >(add-date)
     echo "Starting local NGINX server"
     nginx -c $NGX_CONF
     while true
@@ -30,9 +31,11 @@ daemon_run () {
             done)
             HTML_CODE+="</body></html>"
             echo $HTML_CODE > $HTML_FILE
-            inotifywait -e move -e modify -e delete $BUCKET
+            echo "Page generated on $(date)" >> $HTML_FILE
+            sleep 5
+            inotifywait -e open -e move -e modify -e delete $BUCKET ${HTML_FILE}
+            # inotifywait -e move -e modify -e delete $BUCKET
             wait-for-display
-            sleep 1
     done
     echo done
 }

@@ -2,11 +2,12 @@
 
 ## Optimize Android app databases
 ## Author: Seff P
-## Version: 1.0.1 20210604
+## Version: 1.0.2 20210609
 
 source set-dir
 source set-prompt
 BUCKET="$VAR/status-widget/bucket/optimize-db"
+BIN_DEPS="sqlite3"
 
  case $1 in
  -r|r*)
@@ -26,6 +27,7 @@ BUCKET="$VAR/status-widget/bucket/optimize-db"
 
  -o|o*)
     source check-root
+    source check-bin $BIN_DEPS
     PRESIZE=0
     POSTSIZE=0
     termux-wake-lock
@@ -57,6 +59,8 @@ BUCKET="$VAR/status-widget/bucket/optimize-db"
     echo
     echo "Total DB size before: $PRESIZE KB"
     echo "Total DB size after : $POSTSIZE KB"
+    echo "_____"
+    echo "Vacuumed size       : $(($PRESIZE - $POSTSIZE)) KB"
     termux-wake-unlock
     ;;
     

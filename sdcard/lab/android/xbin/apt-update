@@ -33,9 +33,9 @@ case $1 in
 	if check-ping
 	then
 	    echo -e "${BASENAME} $(BEGIN)"
-	    apt update
-	    apt full-upgrade -y
+	    pkg upgrade -y
 	    apt autoremove -y
+        apt autoclean
 	    apt list --installed > $VAR/${BASENAME}.installed_pkg
 	    rm -f $BUCKET
 	    echo -e "${BASENAME} $(DONE)"

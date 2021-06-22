@@ -2,14 +2,15 @@
 
 ## Daily routine tasks
 ## Author: Seff P
-## Version: 2.2.1 20210604
+## Version: 2.3.0 20210622
 
 source check-root
 source set-dir
 source set-prompt
+source set-log
 
-DATE_LOG="$LOG/daily-jobs.history"
-OUTPUT_LOG="$LOG/daily-jobs.log"
+HIST_FILE="$LOG/daily-jobs.history"
+LOG_FILE="$LOG/daily-jobs.log"
 PREV_PID_FILE="$RUN/daily-jobs.pid-previous"
 BUCKET="$VAR/status-widget/bucket/daily-jobs"
 IS_ONLINE=false
@@ -24,8 +25,8 @@ notify () {
 }
 
 prepare () {
-    cp -f $OUTPUT_LOG ${OUTPUT_LOG}.previous
-    exec &> >(logdate | tee "$OUTPUT_LOG")
+    mv -f $LOG_FILE ${LOG_FILE}.previous
+    exec &> >(tee-log)
     echo -e "daily-jobs $(BEGIN)"
     PREV_PID=$(cat $PREV_PID_FILE 2> /dev/null)
     echo $$ > $PREV_PID_FILE
@@ -97,8 +98,8 @@ run_jobs () {
 
 finish () {
     notify $JOB "Finishing up..."
-    sed -i 1d $DATE_LOG
-    echo "$(logdate) IS_ONLINE=$IS_ONLINE" >> $DATE_LOG
+    sed -i 1d $HIST_FILE
+    echo "$(add-date) IS_ONLINE=$IS_ONLINE" >> $HIST_FILE
     echo "Daily Jobs ran $ONLINE at $(date +"%l:%M %p")" > $BUCKET
     echo -e "daily-jobs $(DONE)"
     echo -en "Releasing wake-lock "

@@ -2,19 +2,21 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 2.0.1 20210604
+## Version: 2.0.2 20210622
 
 source set-dir
 source set-prompt
+source set-log
 
-CONFD="$ETC/apk-update"
+APP_ID="apk-update"
+CONFD="$ETC/${APP_ID}"
 APK_DIR="/sdcard/Backups/apps"
+LOG_FILE="$LOG/${APP_ID}.log"
 TMP="/data/local/tmp/"
 
 read_conf () {
     source $1
-    APK_URL="$VAR/apk-update/$PKG_ID.url"
-    BUCKET="$VAR/status-widget/bucket/apk-update_${PKG_ID}"
+    APK_URL="$VAR/${APP_ID}/$PKG_ID.url"
 }
 
 checkUpdate () {
@@ -51,10 +53,11 @@ installUpdate () {
         termux-notification --title "${APP_NAME} is successfully updated" \
         --content "from version $PKG_VERSION_CURR to $PKG_VERSION_NEW" --id $PKG_ID --icon file_download
         echo "Updated version: $PKG_VERSION_NEW"
-        echo "$APP_NAME updated to version $PKG_VERSION_NEW" > $BUCKET
+        file-log "$APP_NAME updated to version $PKG_VERSION_NEW"
         echo "Updating ${APP_NAME} $(DONE)"
     else
         termux-notification --title "${APP_NAME} update failed" --content "$APK_NAME" --id $PKG_ID --icon error
+        file-log "Updating ${APP_NAME} failed"
         echo "Updating ${APP_NAME} $(FAIL)"
     fi
     rm -f $TMP/$APK_NAME

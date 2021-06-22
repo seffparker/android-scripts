@@ -2,19 +2,20 @@
 
 # Report basic system status
 # Author: Seff Parker
-# Version: v1.1.0 20210209
+# Version: v1.2.1 20210622
 
 source check-root
 source set-prompt
 source set-dir
+source set-log
 
 APP_NAME="System Monitor"
 PID_FILE="$RUN/system-monitor.pid"
 BUCKET="$VAR/status-widget/bucket/monitor"
-INTERVAL=30
+INTERVAL=5
 
 daemon_run () {
-    tty -s && exec &> >(logdate)
+    tty -s && exec &> >(add-date)
     while true
         do
         CPU_BEGIN=$(awk '/cpu / ' /proc/stat)
@@ -27,6 +28,7 @@ daemon_run () {
         LOAD=$(echo "$CPU_BEGIN $CPU_END" | awk '{printf "CPU: " "%0.1f%%,",($13+$14+$15-$2-$3-$4)*100/($13+$14+$15+$16-$2-$3-$4-$5)}')
         echo "$LOAD $CPU_TEMP • $RAM • $BAT_LEVEL $BAT_TEMP" | tee $BUCKET
         sleep $INTERVAL
+        inotifywait -e open ${BUCKET}
         wait-for-display
     done
 }

@@ -2,11 +2,12 @@
 
 ## Post boot tasks
 ## Author: Seff P
-## Version: 20210226
+## Version: 3.0.0 20210622
 
 # Preparing
 source check-root
 source set-dir
+source set-log
 source $ETC/bashrc.root
 source $ETC/hostname
 source $ETC/dns
@@ -17,7 +18,7 @@ BUCKET="$VAR/status-widget/bucket/boot"
 DATE_LOG="${LOG}/post-boot.history"
 sed -i 1d $DATE_LOG
 [ $1 ] && MODE="$1" || MODE="manual trigger"
-echo "$(logdate) $MODE" >> $DATE_LOG
+echo "$(add-date) $MODE" >> $DATE_LOG
 
 # Begin
 echo SHELL=$SHELL
@@ -77,15 +78,22 @@ system-monitor start
 status-widget start
 youtube-vanced patch
 
-# Magisk SELinux bypass
+# echo "Start Viper4Android..."
+# am start-activity -S -W com.pittvandewitt.viperfx/.MainActivity
+# sleep 5
+
+echo "Enabling SElinux"
 setenforce 1
+
+# Magisk SELinux bypass
 supolicy --live 'permissive untrusted_app'
 supolicy --live 'permissive untrusted_app_27'
 supolicy --live 'allow magisk_client app_data_file dir *'
+supolicy --live 'allow hal_audio_default hal_audio_default process execmem'
 
 if [[ "$1" ]]
     then
-    termux-notification --content "Boot scripts are completed!" --id post-boot
+    termux-notification --content "Boot scripts are completed!" --id post-boot --icon power_settings_new
     BTIME=$(awk '/btime/ {print $2}' /proc/stat)
     echo "$HOSTNAME ignition at $(date +"%b %e, %a %l:%M %p" -d @${BTIME})" > $BUCKET
     vibrate 1
