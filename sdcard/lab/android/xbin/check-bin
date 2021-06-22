@@ -1,0 +1,17 @@
+#!/data/bin/bash
+
+# Check the given binaries exists
+# Author: Seff Parker
+# Version: 20210609
+
+source set-prompt
+
+for BIN in $*
+    do
+    which $BIN &> /dev/null || NO_BIN+=($BIN)
+done
+
+if [[ ${NO_BIN} ]]
+    then echo "${NO_BIN[*]} not found $(ABORT)"
+    exit 4
+fi
