@@ -1,0 +1,25 @@
+#!/data/bin/bash
+
+# Install APK and splits using native pm
+# Author: Seff Parker
+# Version: 0.0.1 20210614
+
+source check-root
+source set-prompt
+
+
+if [[ $1 ]] && APKS=$(ls $*)
+then
+    SESSION_ID=$(pm install-create | grep -o "[0-9]*")
+    for APK in $APKS
+        do
+        echo "Processing APK $APK"
+        BYTES=$(stat -c %s $APK)
+        APK_NAME=$(basename $APK)
+        cat $APK | pm install-write -S $BYTES $SESSION_ID ${APK_NAME} || ABORT_ALL
+    done
+    echo "Write complete. Install begin..."
+    pm install-commit $SESSION_ID && DONE || FAIL
+else
+    ABORT "Input error"
+fi
