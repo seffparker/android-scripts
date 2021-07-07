@@ -1,0 +1,37 @@
+#!/data/bin/bash
+
+# Wait for internet with optional notifications
+# Author: Seff Parker
+# Version: 0.0.1 20210626
+
+TEXT="Internet is back online"
+RETRY_INTERVAL=5
+
+run_ping () {
+	while ! check-ping &> /dev/null
+		do sleep ${RETRY_INTERVAL}
+	done
+    [[ "${OPT}" =~ v ]] && vibrate 1
+    [[ "${OPT}" =~ n ]] && termux-notification -t "${TEXT}" -c "" --id ping --icon "public" &
+    [[ "${OPT}" =~ s ]] && termux-tts-speak ${TEXT} &
+    exit 0
+}
+
+show_help () {
+    echo "Wait for Internet and exit"
+    echo
+	echo "Usage:"
+	echo "-v  Vibrate"
+	echo "-s  Use TTS to speak"
+	echo "-n  Show status notification"
+    exit 127
+}
+OPT=$*
+case ${OPT} in
+	*v*|*s*|*n*|"")
+	    run_ping ${OPT}
+	    ;;
+	*)
+		show_help
+		;;
+esac
