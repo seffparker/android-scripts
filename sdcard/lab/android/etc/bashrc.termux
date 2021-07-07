@@ -3,8 +3,8 @@
 
 # Environments
 source /data/xbin/set-dir
-export USER=$(whoami)
 export PATH="$PATH:/data/bin:/data/xbin:/system/bin:/system/xbin"
+USER=termux
 
 # History
 shopt -s histappend
@@ -17,9 +17,4 @@ alias ll='ls -la'
 alias su='/sbin/su -s /data/bin/bash'
 
 # enable colorful terminal
-if [[ ${EUID} == 0 ]] ; then
-        PS1='\[\033[01;31m\]${USER:=$USER}@${HOSTNAME:=$HOSTMAME}\[\033[01;32m\] \W \$\[\033[00m\] '
-else
-        USER=termux
-        PS1='\[\033[01;33m\]${USER:=$USER}@${HOSTNAME:=$HOSTMAME}\[\033[01;32m\] \w \$\[\033[00m\] '
-fi
+PS1='\[\033[01;31m\]$(EXIT=$?; if [[ $EXIT -ne 0 ]]; then echo "$EXIT "; fi)\[\033[01;33m\]${USER:=$USER}@${HOSTNAME:=$HOSTMAME}\[\033[01;32m\] \w \$\[\033[00m\] '

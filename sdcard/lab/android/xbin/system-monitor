@@ -2,7 +2,7 @@
 
 # Report basic system status
 # Author: Seff Parker
-# Version: v1.2.1 20210622
+# Version: v1.2.3 20210703
 
 source check-root
 source set-prompt
@@ -19,7 +19,7 @@ daemon_run () {
     while true
         do
         CPU_BEGIN=$(awk '/cpu / ' /proc/stat)
-        CPU_TEMP=$(awk '{print $1/1000 "°C"}' /sys/devices/virtual/thermal/thermal_zone1/temp)
+        CPU_TEMP="$(grep -o ^.. /sys/devices/virtual/thermal/thermal_zone1/temp)°C"
         BAT_LEVEL=$(awk '{print "Bat. " $0 "%,"}' /sys/class/power_supply/battery/capacity)
         BAT_TEMP=$(awk '{print $1/10 "°C"}' /sys/class/power_supply/battery/temp)
         RAM=$(awk '/MemAvailable:/ {printf "RAM: " "%0.0f MB free",$2/1000}' /proc/meminfo)
@@ -54,7 +54,8 @@ daemon_status () {
     if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "running (PID: $PID) $(OK)"
+        AGE=$(get-file-age $PID_FILE)
+        echo "running for $AGE (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
         CODE=1

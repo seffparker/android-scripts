@@ -2,27 +2,25 @@
 
 ## Optimize Android app databases
 ## Author: Seff P
-## Version: 1.0.2 20210609
+## Version: 1.0.3 20210703
 
 source set-dir
 source set-prompt
+source $ETC/optimize-db.conf
 BUCKET="$VAR/status-widget/bucket/optimize-db"
 BIN_DEPS="sqlite3"
 
  case $1 in
  -r|r*)
-    CURR_TS=$(date +%s)
-    OPTIMIZE_DB_TS=$(date +%s -r $VAR/optimize-db.last_run)
-    let OPTIMIZE_DB_AGE=$CURR_TS-$OPTIMIZE_DB_TS
-    let OPTIMIZE_DB_THR=$(cat $ETC/optimize-db.remind_days)*86400
-    let OPTIMIZE_DB_AGE_DAYS=$OPTIMIZE_DB_AGE/86400
-    if [ $OPTIMIZE_DB_AGE -gt $OPTIMIZE_DB_THR ]
+    OPTIMIZE_DB_AGE=$(get-file-age -qu d $VAR/optimize-db.last_run)
+    OPTIMIZE_DB_AGO=$(get-file-age $VAR/optimize-db.last_run)
+    if [ $OPTIMIZE_DB_AGE -gt $REMIND_DAYS ]
     then
-        termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGE_DAYS days ago" --icon warning
-        echo "Databases last optimized $OPTIMIZE_DB_AGE_DAYS days ago" > $BUCKET
+        termux-notification --title "Database is not optimized recently!" --content "Last optimized $OPTIMIZE_DB_AGO ago" --icon warning
+        echo "Databases last optimized $OPTIMIZE_DB_AGO ago" > $BUCKET
         
     fi
-    echo "Databases last optimized $OPTIMIZE_DB_AGE_DAYS days ago"
+    echo "Databases last optimized $OPTIMIZE_DB_AGO ago"
     ;;
 
  -o|o*)

@@ -2,39 +2,38 @@
 
 ## Sync Internal storage to SD card
 ## Author: Seff P
-## Version: 1.0.1 20210604
+## Version: 1.0.3 20210703
+
+APP_ID="backup-sdcard"
 
 source check-root
-
 source set-dir
 source set-prompt
+source $ETC/${APP_ID}.conf
 
 RSYNC='/data/data/com.termux/files/usr/bin/rsync'
-OPTIONS="-truv --blocking-io -@ 5 --force --delete --stats --exclude-from=$ETC/backup-sdcard.excludes --delete-excluded"
+OPTIONS="-truv --blocking-io -@ 5 --force --delete --stats --exclude-from=$ETC/${APP_ID}.excludes --delete-excluded"
 SRC='/data/media/0/'
 DEST='/mnt/media_rw/4A75-1B1E/phone_backup/'
-BUCKET="$VAR/status-widget/bucket/backup-sdcard"
+BUCKET="$VAR/status-widget/bucket/${APP_ID}"
+LAST_RUN_FILE=$VAR/${APP_ID}.last_run
 
 CheckBackupDrive(){
     if [ ! -d $DEST ]
-        then echo -e "${R}ERROR: Backup Drive Not Found${W}"
-        exit 2
+        then ABORT_ALL "Backup Drive Not Found"
     fi
 }
 
 case $1 in
  -r|r*)
-    CURR_TS=$(date +%s)
-    BACKUP_SDCARD_TS=$(date +%s -r $VAR/backup-sdcard.last_run)
-    let BACKUP_SDCARD_AGE=$CURR_TS-$BACKUP_SDCARD_TS
-    let BACKUP_SDCARD_THR=$(cat $ETC/backup-sdcard.remind_days)*86400
-    let BACKUP_SDCARD_AGE_DAYS=$BACKUP_SDCARD_AGE/86400
-    if [ $BACKUP_SDCARD_AGE -gt $BACKUP_SDCARD_THR ]
+    BACKUP_SDCARD_AGE=$(get-file-age -qu d ${LAST_RUN_FILE})
+    BACKUP_SDCARD_AGO=$(get-file-age ${LAST_RUN_FILE})
+    if [ $BACKUP_SDCARD_AGE -gt $REMIND_DAYS ]
     then
-        termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGE_DAYS days old" --icon warning
-        echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago" > $BUCKET
+        termux-notification --title "Storage is not backed up recently!" --content "Recent backup is $BACKUP_SDCARD_AGO old" --icon warning
+        echo "Storage last backed up $BACKUP_SDCARD_AGO ago" > $BUCKET
     fi
-    echo "Storage last backed up $BACKUP_SDCARD_AGE_DAYS days ago"
+    echo "Storage last backed up $BACKUP_SDCARD_AGO ago"
     ;;
 
  -s|s*)
@@ -43,15 +42,15 @@ case $1 in
     $RSYNC $OPTIONS -n $SRC $DEST | awk '/^deleting / { $1=""; print $0; system ("") }' | /system/bin/grep --line-buffered -vE 'WhatsApp|.estrongs'
     DONE
     echo -n "Last rsync date: "
-    cat $VAR/backup-sdcard.last_run
+    cat ${LAST_RUN_FILE}
     ;;
 
  -b|b*)
     CheckBackupDrive
     termux-wake-lock
     $RSYNC $OPTIONS $SRC $DEST
-    date > $DEST/../backup-sdcard.last_run
-    date > $VAR/backup-sdcard.last_run
+    date > $DEST/../${APP_ID}.last_run
+    date > ${LAST_RUN_FILE}
     echo "Storage last backed up on $(date +%F)" > $BUCKET
     termux-wake-unlock
     ;;

@@ -2,7 +2,7 @@
 
 ## Update App from given APK file URL
 ## Author: Seff P.
-## Version: 2.0.2 20210622
+## Version: 2.0.3 20210630
 
 source set-dir
 source set-prompt
@@ -46,7 +46,7 @@ installUpdate () {
     wget -c -t 0 -T 10 $APK_URL_NEW -O $APK_DIR/$APK_NAME
     echo "Updating ${APP_NAME} $(BEGIN)"
     cp -f $APK_DIR/$APK_NAME $TMP/
-    if pm install --dont-kill -f $TMP/$APK_NAME
+    if apk-install $TMP/$APK_NAME
         then
         echo $APK_URL_NEW > $APK_URL
         PKG_VERSION_NEW=$(dumpsys package $PKG_ID | awk -F "=" '/versionName/ {print $2}')

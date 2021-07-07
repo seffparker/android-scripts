@@ -2,7 +2,7 @@
 
 ## Generate various reports
 ## Author: Seff P
-## Version: 20210209
+## Version: 2.0.1 20210703
 
 check-root &> /dev/null || exec /sbin/su -c 'report'
 source set-dir
@@ -11,6 +11,9 @@ source termux-env
 echo -ne "$HOSTNAME engine start:\t"
 BTIME=$(awk '/btime/ {print $2}' /proc/stat)
 date -d @${BTIME} 2> /dev/null || echo UNKNOWN
+
+echo -ne "Load average:\t\t"
+cat /proc/loadavg | cut -d' ' -f1-3
 
 echo -ne "Last run of post-boot:\t"
 date -r $LOG/post-boot.history 2> /dev/null || echo UNKNOWN
@@ -24,17 +27,7 @@ date -r /data/data/com.termux/files/usr/var/log/apt/history.log 2> /dev/null || 
 echo -ne "Adblock database date:\t"
 date -d "$(grep '# Date:' /etc/hosts | cut -d' ' -f3-7)" 2> /dev/null || echo UNKNOWN
 
-echo -ne "Crond Service status:\t"
-crond-service status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/crond-service.pid))" || echo STOPPED
-
-echo -ne "BCC service status:\t"
-basic-charging-control status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/bcc.pid))" || echo STOPPED
-
-echo -ne "System Monitor daemon:\t"
-system-monitor status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/system-monitor.pid))" || echo STOPPED
-
-echo -ne "Status Widget daemon:\t"
-status-widget status &> /dev/null && echo "RUNNING (PID: $(cat $RUN/status-widget.pid))" || echo STOPPED
-
-echo -ne "Load average:\t\t"
-cat /proc/loadavg | cut -d' ' -f1-3
+crond-service status
+system-monitor status
+status-widget status
+basic-charging-control status

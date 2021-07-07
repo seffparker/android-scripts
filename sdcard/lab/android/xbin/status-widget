@@ -2,7 +2,7 @@
 
 # Generate plain HTML file from text file
 # Author: Seff Parker
-# Version: 1.1.1 20210622
+# Version: 1.1.2 20210703
 
 source check-root
 source set-prompt
@@ -61,7 +61,8 @@ daemon_status () {
     if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "running (PID: $PID) $(OK)"
+        AGE=$(get-file-age $PID_FILE)
+        echo "running for $AGE (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
         CODE=1

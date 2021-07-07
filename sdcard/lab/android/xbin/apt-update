@@ -2,49 +2,50 @@
 
 ## Update Termux APT packages
 ## Author: Seff P
-## Version: 1.0.1 20210604
+## Version: 1.0.2 20210703
 
+APP_ID="apt-update"
 source set-dir
 source set-prompt
-BASENAME=$(basename $0)
-BUCKET="$VAR/status-widget/bucket/${BASENAME}"
+source $ETC/${APP_ID}.conf
+BUCKET="$VAR/status-widget/bucket/${APP_ID}"
 
 
 case $1 in
  -r|r*)
-    CURR_TS=$(date +%s)
-    PKG_UPDATE_TS=$(date +%s -r /data/data/com.termux/files/usr/var/log/apt/history.log)
-    let PKG_UPDATE_AGE=$CURR_TS-$PKG_UPDATE_TS
-    let PKG_UPDATE_THR=$(cat $ETC/${BASENAME}.remind_days)*86400
-    let PKG_UPDATE_AGE_DAYS=$PKG_UPDATE_AGE/86400
-    if [ $PKG_UPDATE_AGE -gt $PKG_UPDATE_THR ]
+    PKG_UPDATE_AGE=$(get-file-age -qu d /data/data/com.termux/files/usr/var/log/apt/history.log)
+    PKG_UPDATE_AGO=$(get-file-age /data/data/com.termux/files/usr/var/log/apt/history.log)
+    if [ $PKG_UPDATE_AGE -gt $REMIND_DAYS ]
     then
-        termux-notification --title "APT packages are not updated recently!" --content "Last updated $PKG_UPDATE_AGE_DAYS days ago" --icon warning
-        echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago" > $BUCKET
+        termux-notification --title "APT packages are not updated recently!" --content "Last updated $PKG_UPDATE_AGO ago" --icon warning
+        echo "APT packages last updated $PKG_UPDATE_AGO ago" > $BUCKET
     fi
-    echo "APT packages last updated $PKG_UPDATE_AGE_DAYS days ago"
+    echo "APT packages last updated $PKG_UPDATE_AGO ago"
     ;;
     
  "")
     if check-root &> /dev/null
-        then echo "${BASENAME} cannot run as root $(FAIL)"
+        then echo "${APP_ID} cannot run as root $(FAIL)"
         exit 1
     fi
 	if check-ping
 	then
-	    echo -e "${BASENAME} $(BEGIN)"
+	    echo -e "${APP_ID} $(BEGIN)"
 	    pkg upgrade -y
 	    apt autoremove -y
         apt autoclean
-	    apt list --installed > $VAR/${BASENAME}.installed_pkg
+	    apt list --installed > $VAR/${APP_ID}.installed_pkg
 	    rm -f $BUCKET
-	    echo -e "${BASENAME} $(DONE)"
+	    echo "APT packages last updated on $(date +%F)" > $BUCKET
+	    echo -e "${APP_ID} $(DONE)"
 	else
-	    echo -e "${BASENAME} $(FAIL)"
+	    echo -e "${APP_ID} $(FAIL)"
+	    exit 3
 	fi
     ;;
     
  *)
     echo "Usage $(basename $0) [-r|report]"
+    exit 1
     ;;
 esac

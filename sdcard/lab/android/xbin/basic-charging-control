@@ -2,7 +2,7 @@
 
 # Basic charging control and status notification
 # Author: Seff P.
-# Version: 5.0.2 20210622
+# Version: 5.0.5 20210703
 
 # daemon variables
 APP_NAME="Basic Charging Control"
@@ -22,6 +22,7 @@ SHOW_WARNING=true
 SLEEP_TINY=1
 SLEEP_SHORT=3
 STEP=1
+INOTIFY_OPT="-qq"
 
 source check-root
 source check-bin $BIN_DEPS
@@ -93,12 +94,12 @@ daemon_run () {
 trap set_cycle USR1
 trap set_super USR2
 trap hide_status HUP
-:> ${LOG_FILE}
 exec &> >(tee-log)
 echo "Starting ${APP_NAME}"
 chmod u+w $INPUT_SWITCH $CURR_LIMIT_FILE
 echo $ON > $INPUT_SWITCH
 CAPACITY=$(cat $CAPACITY_FILE)
+[[ ${DEBUG} == true ]] && INOTIFY_OPT=""
 set_cycle
 while true
     do
@@ -117,7 +118,7 @@ while true
             INIT=false
             SETTLED=false
             CURRENT_LIMIT=$MAX_LIMIT
-            ICON="power"
+            ICON=$ICON_INIT
             STATUS_TEXT="is initializing"
             echo "${MODE}charging initialized at $LEVEL% / ${TEMP}°C"
             
@@ -128,7 +129,7 @@ while true
                 then # resume charging
                 echo "Charging resumed at ${RESUME_TEMP}°C"
                 IS_PAUSED=false
-                ICON="power"
+                ICON=$ICON_CHARGING
             fi
     
         elif ! $SETTLED
@@ -145,6 +146,7 @@ while true
                 echo "${MODE}charging ${STATUS_TEXT} $CURR_MAX_TEXT"
                 echo "${MODE}charging at $LINE_VOLT using ${CHARGER} $CURR_MAX_TEXT" > ${BUCKET}
                 SETTLED=true
+                ICON=$ICON_CHARGING
                 unset CURR_NOW CURR_MAX
             else
                 echo $MAX > $CURR_LIMIT_FILE
@@ -184,7 +186,7 @@ while true
             IS_PAUSED=true
             echo "Charging paused at ${TEMP}°C, resumes at ${RESUME_TEMP}°C. Level ${LEVEL}%"
             STATUS_TEXT="paused at ${PAUSE_TEMP}°C, resumes at ${RESUME_TEMP}°C"
-            ICON="pause"
+            ICON=$ICON_PAUSE
         fi      
        
         if [[ $LEVEL -ge $STOP_LEVEL ]]
@@ -212,13 +214,13 @@ while true
             BUTTON_ACTION="$BUTTON1_ACTION"
             END_TEXT="Charging is limited to ${STOP_LEVEL}%"
             END="completed"
-            ICON="done"
+            ICON=$ICON_COMPLETE
             set_cycle
         else
             unset BUTTON_TEXT BUTTON_ACTION
             END_TEXT="Charging interrupted at $LEVEL%"
             END="interrupted"
-            ICON="cancel"
+            ICON=$ICON_CANCEL
         fi
         echo "${END_TEXT}, Temp. ${TEMP}°C"
         echo "Charged additional ${LEVEL_UP}% in ${DURATION},  ${RATE_TEXT}"
@@ -246,18 +248,20 @@ while true
             -t "$TEXT" \
             --button1 "${BUTTON1_TEXT}" \
             --button1-action "${BUTTON1_ACTION}" \
-            --icon block
+            --icon $ICON_BLOCK
             SHOW_WARNING=false
             unset TEXT
         elif [[ $STATE -eq $OFFLINE ]] && ! $SHOW_WARNING
             then # charger just removed
+            debug "Charger offline"
             SHOW_WARNING=true
         fi
         
         while grep -qw $STATE $INPUT_STATE && [[ $LEVEL -ge $RESUME_LEVEL ]]
             do # charging is disabled
+            debug "Level is {LEVEL}%, waiting for event"
             sleep $SLEEP_SHORT
-            inotifywait -qq -e close $INPUT_STATE
+            inotifywait ${INOTIFY_OPT} -e close $INPUT_STATE
             LEVEL=$(cat $LEVEL_FILE)
         done
         
@@ -272,10 +276,11 @@ while true
     else
         # not connected, not charging
         echo "Level is $LEVEL%. Not connected"
+        sleep $SLEEP_SHORT
         while grep -qw $OFFLINE $INPUT_STATE
-            do sleep $SLEEP_SHORT
-            inotifywait -qq -e close $INPUT_STATE
+            do inotifywait ${INOTIFY_OPT} -e close $INPUT_STATE
         done
+        debug "USB connected"
     fi
 done
 }
@@ -301,7 +306,8 @@ daemon_status () {
     if daemon -t -p $PID_FILE -c $0
         then
         PID=$(cat $PID_FILE)
-        echo "running (PID: $PID) $(OK)"
+        AGE=$(get-file-age $PID_FILE)
+        echo "running for $AGE (PID: $PID) $(OK)"
     else
         echo "not running $(FAIL)"
         CODE=1

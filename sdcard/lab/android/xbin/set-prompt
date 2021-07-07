@@ -14,19 +14,24 @@ BEGIN () {
     
 DONE () {
     echo -e "${*}${Y} [ DONE ]${W}"
+    CODE=0
     }
 OK () {
     echo -e "${*}${G} [ OK ]${W}"
+    CODE=0
     }
 UPDATED () {
     echo -e "${*}${Y} [ UPDATED ]${W}"
+    CODE=0
     }    
 
 SKIP () {
     echo -e "${*}${G} [ SKIP ]${W}"
+    CODE=0
     }
 ABORT () {
     echo -e "${*}${Y} [ ABORT ]${W}"
+    CODE=2
     }
     
 ABORT_ALL () {
@@ -36,6 +41,7 @@ ABORT_ALL () {
     
 FAIL () {
     echo -e "${*}${R} [ FAIL ]${W}"
+    CODE=1
     }
     
 FAIL_ALL () {
