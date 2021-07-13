@@ -2,59 +2,59 @@
 
 # Print file modification age in different units
 # Author: Seff Parker
-# Version: 0.0.1 20210703
+# Version: 0.0.2 20210711
 
 QUIET_UNIT=false
 
-UNIT_s="seconds"
-UNIT_m="minutes"
-UNIT_h="hours"
-UNIT_d="days"
-UNIT_M="months"
-UNIT_y="years"
+UNIT_s="second"
+UNIT_m="minute"
+UNIT_h="hour"
+UNIT_d="day"
+UNIT_M="month"
+UNIT_y="year"
 
-age_seconds () {
+age_second () {
     AGE=${AGE_SEC}
 }
 
-age_minutes () {
-    AGE=$((${AGE_SEC}/60))
+age_minute () {
+    AGE=$(((${AGE_SEC}+15)/60))
 }
 
-age_hours () {
-    AGE=$((${AGE_SEC}/3600))
+age_hour () {
+    AGE=$(((${AGE_SEC}+600)/3600))
 }
 
-age_days () {
-    AGE=$((${AGE_SEC}/86400))
+age_day () {
+    AGE=$(((${AGE_SEC}+7200)/86400))
 }
 
-age_months () {
-    AGE=$((${AGE_SEC}/2592000))
+age_month () {
+    AGE=$(((${AGE_SEC}+259200)/2592000))
 }
 
-age_years () {
-    AGE=$((${AGE_SEC}/31104000))
+age_year () {
+    AGE=$(((${AGE_SEC}+2592000)/31104000))
 }
 
 age_auto () {
     if [[ ${AGE_SEC} -lt 60 ]]
         then
-        UNIT="seconds"
+        UNIT="second"
     elif [[ ${AGE_SEC} -lt 3600 ]]
         then
-        UNIT="minutes"
+        UNIT="minute"
     elif [[ ${AGE_SEC} -lt 86400 ]]
         then
-        UNIT="hours"
+        UNIT="hour"
     elif [[ ${AGE_SEC} -lt 2592000 ]]
         then
-        UNIT="days"
+        UNIT="day"
     elif [[ ${AGE_SEC} -lt 31104000 ]]
         then
-        UNIT="months"
+        UNIT="month"
     else
-        UNIT="years"
+        UNIT="year"
     fi
     age_${UNIT}
 }
@@ -97,12 +97,12 @@ print_usage () {
     echo "   -f       Path to file / dir"
     echo "             or STDIN date string"
     echo "   -u UNIT  Unit to calculate:"
-    echo "             s = seconds"
-    echo "             m = minutes"
-    echo "             h = hours"
-    echo "             d = days"
-    echo "             M = months"
-    echo "             y = years"
+    echo "             s = second"
+    echo "             m = minute"
+    echo "             h = hour"
+    echo "             d = day"
+    echo "             M = month"
+    echo "             y = year"
     echo "   -q        Quiet, hide unit"
     exit 2
 }
@@ -137,7 +137,11 @@ if [[ $AGE_SEC ]]
     then
     age_${UNIT}
     echo -n $AGE
-    ${QUIET_UNIT} || echo " $UNIT"
+    if ! ${QUIET_UNIT}
+        then
+        [[ $AGE -gt 1 ]] && S="s"
+        echo " ${UNIT}${S}"
+    fi
 else
     print_usage
 fi
